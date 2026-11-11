@@ -72,21 +72,18 @@ async function resolveIdentityRepository(): Promise<{
 
   if (production) {
     if (!looksPostgres || placeholder) {
-      console.warn(
-        '[VAJRA] Production database URL unset or placeholder; falling back to in-memory repository.'
+      throw new Error(
+        '[VAJRA] In-memory fallback is disabled in production. Production requires a non-placeholder DATABASE_URL.'
       );
-      return { repository: new InMemoryIdentityRepository(), prisma: null };
     }
     const prisma = new PrismaClient();
     try {
       await prisma.$connect();
       return { repository: new PrismaIdentityRepository(prisma), prisma };
     } catch (err) {
-      console.warn(
-        '[VAJRA] PostgreSQL connection unreachable at startup; falling back to in-memory repository.',
-        err instanceof Error ? err.message : err
+      throw new Error(
+        `[VAJRA] Production refuses to start without a healthy database. ${err instanceof Error ? err.message : String(err)}`
       );
-      return { repository: new InMemoryIdentityRepository(), prisma: null };
     }
   }
 

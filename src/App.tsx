@@ -547,6 +547,28 @@ export default function App() {
     setShowDeveloperPairingDetails(false);
     setConnectWizardStep(1);
     setConnectModalOpen(true);
+
+    // Request Notification permission through clear user-initiated action (Connect Device click)
+    // Never re-prompt users who have denied permission
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        try {
+          void Notification.requestPermission().then((permission) => {
+            setBrowserAlertPermission(permission);
+            if (permission === 'granted') {
+              setBrowserAlertsEnabled(true);
+              try {
+                localStorage.setItem('vajra_browser_notifications_enabled', 'true');
+              } catch {
+                // ignore
+              }
+            }
+          });
+        } catch {
+          // Restricted browser environment
+        }
+      }
+    }
   }, []);
 
   const closeConnectDeviceModal = useCallback(() => {
@@ -976,6 +998,130 @@ export default function App() {
   const pairedReadyDeviceIdRef = useRef(pairedReadyDeviceId);
   pairedReadyDeviceIdRef.current = pairedReadyDeviceId;
 
+  // Track deviceIds for which a system notification has already been triggered to prevent duplicate alerts
+  const notifiedDeviceIdsRef = useRef<Set<string>>(new Set());
+
+  // Subtle non-intrusive audio cue respecting browser autoplay policies
+  const playApprovalChime = useCallback(() => {
+    try {
+      if (typeof window === 'undefined') return;
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      // Never attempt to bypass or force playback if browser autoplay policy suspended the context
+      if (ctx.state === 'suspended') {
+        ctx.close().catch(() => {});
+        return;
+      }
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, now); // D5
+      osc.frequency.exponentialRampToValueAtTime(880.0, now + 0.12); // A5
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+
+      osc.start(now);
+      osc.stop(now + 0.28);
+      osc.onended = () => {
+        ctx.close().catch(() => {});
+      };
+    } catch {
+      // AudioContext unavailable or autoplay restricted
+    }
+  }, []);
+
+  // Authenticated fetch from backend before opening approval review modal
+  // Strictly verifies real backend state instead of trusting notification payloads
+  const openReviewModalForDevice = useCallback(async (targetDeviceId?: string) => {
+    try {
+      const res = await fetch('/api/devices/pending-approvals', {
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const list: PendingDeviceApprovalDto[] = Array.isArray(data.pendingApprovals)
+        ? data.pendingApprovals
+        : [];
+      setPendingApprovals(list);
+
+      if (list.length === 0) return;
+
+      const target = targetDeviceId
+        ? list.find((p) => p.deviceId === targetDeviceId) || list[0]
+        : list[0];
+
+      if (target) {
+        setAwaitingDeviceDetails({
+          deviceName: target.name,
+          deviceType: target.deviceType,
+          publicKeyFingerprint: target.publicKeyFingerprint,
+          hardwareBacked: target.hardwareBacked ?? false,
+        });
+        setPairedReadyDeviceId(target.deviceId);
+        setNewDeviceName(target.name);
+        setNewDeviceType(target.deviceType === 'WINDOWS' ? 'WINDOWS' : 'ANDROID');
+        setConnectWizardStep(3);
+        setConnectModalOpen(true);
+      }
+    } catch {
+      // Network failure handled gracefully
+    }
+  }, []);
+
+  const notifyOwnerOfPendingDevice = useCallback(
+    (deviceId: string) => {
+      if (!deviceId) return;
+      if (notifiedDeviceIdsRef.current.has(deviceId)) {
+        return; // Deduplicate: already notified for this pending device
+      }
+      notifiedDeviceIdsRef.current.add(deviceId);
+
+      // Play subtle audio cue if permitted
+      playApprovalChime();
+
+      // Native browser notification
+      if (
+        typeof window !== 'undefined' &&
+        'Notification' in window &&
+        Notification.permission === 'granted'
+      ) {
+        try {
+          const notification = new Notification('VAJRA Security — Approval Required', {
+            body: 'An Android or Windows device is requesting authorization. Open VAJRA to review.',
+            icon: '/favicon.ico',
+            tag: `vajra-approval-${deviceId}`,
+          });
+
+          notification.onclick = () => {
+            try {
+              window.focus();
+            } catch {
+              // ignore
+            }
+            try {
+              notification.close();
+            } catch {
+              // ignore
+            }
+            void openReviewModalForDevice(deviceId);
+          };
+        } catch {
+          // System notification dispatch failed
+        }
+      }
+    },
+    [playApprovalChime, openReviewModalForDevice]
+  );
+
   const fetchPendingApprovals = useCallback(async () => {
     if (!currentUser) {
       setPendingApprovals([]);
@@ -990,6 +1136,24 @@ export default function App() {
         const data = await res.json();
         if (Array.isArray(data.pendingApprovals)) {
           setPendingApprovals(data.pendingApprovals);
+
+          // Deduplicate across SSE and polling: notify if new device found
+          for (const pending of data.pendingApprovals) {
+            if (pending?.deviceId && !notifiedDeviceIdsRef.current.has(pending.deviceId)) {
+              notifyOwnerOfPendingDevice(pending.deviceId);
+            }
+          }
+
+          // Clean up notified device IDs that are no longer pending
+          const activePendingIds = new Set(
+            data.pendingApprovals.map((p: PendingDeviceApprovalDto) => p.deviceId)
+          );
+          for (const id of Array.from(notifiedDeviceIdsRef.current)) {
+            if (!activePendingIds.has(id)) {
+              notifiedDeviceIdsRef.current.delete(id);
+            }
+          }
+
           if (data.pendingApprovals.length > 0) {
             const currentActive = activeEnrollmentRef.current;
             const match = currentActive?.deviceId
@@ -1016,7 +1180,7 @@ export default function App() {
     } catch {
       // transient network poll error ignored
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, notifyOwnerOfPendingDevice]);
 
   // Real-time Owner Event Stream (SSE) + Background Recovery Polling
   useEffect(() => {
@@ -1069,6 +1233,8 @@ export default function App() {
             const parsed = JSON.parse(e.data);
             const p = parsed.payload;
             if (p?.deviceId) {
+              notifyOwnerOfPendingDevice(p.deviceId);
+
               void fetchPendingApprovals();
               void fetchEnrolledDevices();
               void fetchNotifications();
@@ -1095,22 +1261,6 @@ export default function App() {
                 `${p.deviceName || 'New device'} completed verification and is waiting for your authorization.`,
                 'info'
               );
-
-              // Trigger OS Notification if user granted permission
-              if (
-                typeof window !== 'undefined' &&
-                'Notification' in window &&
-                Notification.permission === 'granted'
-              ) {
-                try {
-                  new Notification('VAJRA — Device Authorization Required', {
-                    body: `${p.deviceName || 'New device'} verified its identity and requires your authorization.`,
-                    icon: '/favicon.ico',
-                  });
-                } catch {
-                  // Ignore browser notification failure
-                }
-              }
             }
           } catch {
             // ignore parse error
@@ -1122,6 +1272,7 @@ export default function App() {
             const parsed = JSON.parse(e.data);
             const p = parsed.payload;
             if (p?.deviceId) {
+              notifiedDeviceIdsRef.current.delete(p.deviceId);
               setPendingApprovals((prev) => prev.filter((item) => item.deviceId !== p.deviceId));
               if (connectModalOpenRef.current && pairedReadyDeviceIdRef.current === p.deviceId) {
                 setConnectWizardStep(4);
@@ -1141,6 +1292,7 @@ export default function App() {
             const parsed = JSON.parse(e.data);
             const p = parsed.payload;
             if (p?.deviceId) {
+              notifiedDeviceIdsRef.current.delete(p.deviceId);
               setPendingApprovals((prev) => prev.filter((item) => item.deviceId !== p.deviceId));
               if (connectModalOpenRef.current && pairedReadyDeviceIdRef.current === p.deviceId) {
                 closeConnectDeviceModal();
@@ -1171,6 +1323,14 @@ export default function App() {
 
     setupEventSource();
 
+    // Window focus recovery
+    const handleFocus = () => {
+      void fetchPendingApprovals();
+      void fetchEnrolledDevices();
+      void fetchNotifications();
+    };
+    window.addEventListener('focus', handleFocus);
+
     // Tab visibility recovery
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
@@ -1198,6 +1358,7 @@ export default function App() {
 
     return () => {
       isDisposed = true;
+      window.removeEventListener('focus', handleFocus);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
       if (eventSource) {
@@ -1216,6 +1377,7 @@ export default function App() {
     fetchNotifications,
     fetchAuditTrail,
     closeConnectDeviceModal,
+    notifyOwnerOfPendingDevice,
   ]);
 
   // Live polling for device scan & passcode verification in Step 2
@@ -2654,6 +2816,7 @@ export default function App() {
   const handleConfirmEnrollment = async (deviceId: string, fingerprint: string | null) => {
     try {
       setEnrollmentStepBusy(true);
+      notifiedDeviceIdsRef.current.delete(deviceId);
       const res = await fetch(`/api/devices/${deviceId}/enrollment/confirm`, {
         method: 'POST',
         credentials: 'same-origin',
@@ -2694,6 +2857,7 @@ export default function App() {
   const handleRejectEnrollment = async (deviceId: string) => {
     try {
       setEnrollmentStepBusy(true);
+      notifiedDeviceIdsRef.current.delete(deviceId);
       const res = await fetch(`/api/devices/${deviceId}/enrollment/reject`, {
         method: 'POST',
         credentials: 'same-origin',

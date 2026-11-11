@@ -42,6 +42,7 @@ import {
 } from '../auth/middleware.ts';
 import { SlidingWindowRateLimiter } from '../auth/rate-limiter.ts';
 import { ownerEventBroadcaster } from '../events/ownerStream.ts';
+import { handleOwnerSseStream } from '../events/routes.ts';
 
 export interface DeviceRouterOptions {
   repository: IdentityRepository;
@@ -337,32 +338,9 @@ export function createDeviceRouter(options: DeviceRouterOptions): Router {
    * GET /api/events/stream
    * Authenticated SSE stream for owner real-time notifications.
    * Dispatches DEVICE_AWAITING_APPROVAL, DEVICE_CONNECTED, and DEVICE_REJECTED.
+   * Emits keep-alive comments every 15s to prevent intermediate timeouts.
    */
-  router.get(
-    '/events/stream',
-    requireAuthenticatedUser,
-    (req: Request, res: Response): void => {
-      const user = req.authContext?.user;
-      if (!user) {
-        res.status(401).json({
-          error: { code: 'UNAUTHENTICATED', message: 'Authentication required.' },
-        });
-        return;
-      }
-
-      res.setHeader('Content-Type', 'text/event-stream');
-      res.setHeader('Cache-Control', 'no-cache, no-transform');
-      res.setHeader('Connection', 'keep-alive');
-      res.setHeader('X-Accel-Buffering', 'no');
-      res.flushHeaders?.();
-
-      const cleanup = ownerEventBroadcaster.registerClient(user.id, res);
-
-      req.on('close', () => {
-        cleanup();
-      });
-    }
-  );
+  router.get('/events/stream', requireAuthenticatedUser, handleOwnerSseStream);
 
   /**
    * GET /api/devices/:id
