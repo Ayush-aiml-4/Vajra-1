@@ -654,7 +654,14 @@ class EnrollmentActivity : AppCompatActivity() {
                         if (res.isSuccessful) {
                             consecutiveHttpErrors = 0
                             val respBody = res.body?.string().orEmpty()
-                            val json = JSONObject(respBody)
+                            val json = try {
+                                JSONObject(respBody)
+                            } catch (_: Exception) {
+                                withContext(Dispatchers.Main) {
+                                    txtAwaitingDesc?.text = "Received unexpected response format (attempt $attempts). Retrying..."
+                                }
+                                return@use
+                            }
                             val status = json.optString("status")
                             val lifecycleState = json.optString("lifecycleState")
 

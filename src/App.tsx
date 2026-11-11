@@ -1001,7 +1001,7 @@ export default function App() {
             if (match && connectModalOpenRef.current && connectWizardStepRef.current === 2) {
               setPairedReadyDeviceId(match.deviceId);
               setNewDeviceName(match.name);
-              setNewDeviceType(match.deviceType);
+              setNewDeviceType(match.deviceType === 'WINDOWS' ? 'WINDOWS' : 'ANDROID');
               setAwaitingDeviceDetails({
                 deviceName: match.name,
                 deviceType: match.deviceType,
@@ -4322,10 +4322,15 @@ export default function App() {
                         <span className="font-mono text-[10px] text-[#A6A8B1] uppercase px-1.5 py-0.5 rounded bg-[#15171C]">
                           {pending.deviceType}
                         </span>
-                        <span className="text-[11px] text-[#75B798] flex items-center gap-1 font-medium">
+                        <span className="text-[11px] text-[#C8A66A] flex items-center gap-1 font-medium">
                           <ShieldCheck className="w-3.5 h-3.5" />
-                          {pending.hardwareBacked ? 'Hardware Keystore (TEE / StrongBox)' : 'Cryptographic Keystore'}
+                          Cryptographic Keystore (ECDSA P-256 · Unattested)
                         </span>
+                      </div>
+                      <div className="text-[11px] text-[#A6A8B1] flex items-center gap-2">
+                        <span>Requested {formatRelativeTime(pending.submittedAt)}</span>
+                        <span>·</span>
+                        <span className="text-[#C8A66A] font-medium">Awaiting Owner Authorization</span>
                       </div>
                       <div className="font-mono text-[11px] text-[#C8A66A] break-all">
                         Fingerprint: {pending.publicKeyFingerprint}
@@ -4335,18 +4340,18 @@ export default function App() {
                       <SecondaryButton
                         disabled={enrollmentStepBusy}
                         onClick={() => void handleRejectEnrollment(pending.deviceId)}
-                        className="text-xs px-3.5 py-1.5 border-[#D06C64]/40 hover:border-[#D06C64] hover:text-[#D06C64]"
+                        className="text-xs px-3 py-1.5 border-[#D06C64]/40 hover:border-[#D06C64] hover:text-[#D06C64]"
                       >
                         Reject
                       </SecondaryButton>
-                      <PrimaryButton
+                      <SecondaryButton
                         disabled={enrollmentStepBusy}
                         onClick={() => {
                           setAwaitingDeviceDetails({
                             deviceName: pending.name,
                             deviceType: pending.deviceType,
                             publicKeyFingerprint: pending.publicKeyFingerprint,
-                            hardwareBacked: pending.hardwareBacked ?? false,
+                            hardwareBacked: false,
                           });
                           setPairedReadyDeviceId(pending.deviceId);
                           setNewDeviceName(pending.name);
@@ -4354,9 +4359,16 @@ export default function App() {
                           setConnectWizardStep(3);
                           setConnectModalOpen(true);
                         }}
+                        className="text-xs px-3 py-1.5"
+                      >
+                        Review
+                      </SecondaryButton>
+                      <PrimaryButton
+                        disabled={enrollmentStepBusy}
+                        onClick={() => void handleConfirmEnrollment(pending.deviceId, pending.publicKeyFingerprint)}
                         className="text-xs px-4 py-1.5"
                       >
-                        Review & Authorize
+                        {enrollmentStepBusy ? 'Authorizing...' : 'Approve & Protect'}
                       </PrimaryButton>
                     </div>
                   </div>
@@ -6248,6 +6260,12 @@ export default function App() {
             {/* Primary Status Rows */}
             <div className="space-y-3 text-xs border-t border-[#25282E] pt-5">
               <div className="flex items-center justify-between py-1.5">
+                <span className="text-[#9499A3]">Platform</span>
+                <span className="text-[#F4F1EA] font-medium">
+                  {selectedDrawerDevice.platform === 'WINDOWS' ? 'Windows' : 'Android'}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1.5">
                 <span className="text-[#9499A3]">Security Health</span>
                 <span className="text-[#F4F1EA] font-medium">
                   {selectedDrawerDevice.securityHealthLabel}
@@ -6266,25 +6284,56 @@ export default function App() {
                 </span>
               </div>
               <div className="flex items-center justify-between py-1.5">
-                <span className="text-[#9499A3]">Location</span>
-                <span className="text-[#F4F1EA] font-medium text-right max-w-[230px]">
-                  {deviceLocationByDevice[selectedDrawerDevice.id]?.regionSummary ??
-                    (selectedDrawerDevice.isDemo
-                      ? selectedDrawerDevice.platform === 'ANDROID'
-                        ? 'Sample preview · Permission-gated location'
-                        : 'Sample preview · Network check-in'
-                      : 'Awaiting companion agent check-in')}
+                <span className="text-[#9499A3]">Latest Heartbeat</span>
+                <span className="text-[#F4F1EA] font-medium text-right">
+                  {(() => {
+                    const matchedDev = enrolledDevices.find((d) => d.id === selectedDrawerDevice.id);
+                    const hbTime =
+                      deviceHeartbeatByDevice[selectedDrawerDevice.id]?.receivedAt ??
+                      matchedDev?.lastHeartbeatAt;
+                    return hbTime ? formatRelativeTime(hbTime) : 'Not reported';
+                  })()}
                 </span>
               </div>
-              {deviceHeartbeatByDevice[selectedDrawerDevice.id] && (
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-[#9499A3]">Battery</span>
+                <span className="text-[#F4F1EA] font-medium text-right">
+                  {(() => {
+                    const hb = deviceHeartbeatByDevice[selectedDrawerDevice.id];
+                    const bat = deviceBatteryHistoryByDevice[selectedDrawerDevice.id];
+                    const level = hb?.batteryLevel ?? bat?.currentLevel;
+                    const charging = hb?.charging ?? bat?.charging;
+                    if (level !== null && level !== undefined) {
+                      return `${level}% ${charging ? '(Charging)' : '(On battery)'}`;
+                    }
+                    return 'Not reported';
+                  })()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-[#9499A3]">Last Command</span>
+                <span className="text-[#F4F1EA] font-medium text-right">
+                  {(() => {
+                    const actions = deviceActionsByDevice[selectedDrawerDevice.id] ?? [];
+                    if (actions.length > 0) {
+                      const latest = actions[0];
+                      return `${latest.actionType.replace(/_/g, ' ')} (${latest.status})`;
+                    }
+                    return 'No commands executed yet';
+                  })()}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-1.5">
+                <span className="text-[#9499A3]">Key Protection</span>
+                <span className="text-[#C8A66A] font-medium text-right text-[11px]">
+                  Cryptographic Keystore (ECDSA P-256 · Software Attestation)
+                </span>
+              </div>
+              {selectedDrawerDevice.publicKeyFingerprint && (
                 <div className="flex items-center justify-between py-1.5">
-                  <span className="text-[#9499A3]">Latest Heartbeat</span>
-                  <span className="text-[#F4F1EA] font-medium text-right">
-                    {deviceHeartbeatByDevice[selectedDrawerDevice.id]?.batteryLevel !== null
-                      ? `${deviceHeartbeatByDevice[selectedDrawerDevice.id]?.batteryLevel}% · `
-                      : ''}
-                    {deviceHeartbeatByDevice[selectedDrawerDevice.id]?.permissionSummary ??
-                      'Permissions verified'}
+                  <span className="text-[#9499A3]">Fingerprint</span>
+                  <span className="text-[#9499A3] font-mono text-[10px] break-all text-right max-w-[200px]">
+                    {selectedDrawerDevice.publicKeyFingerprint}
                   </span>
                 </div>
               )}
