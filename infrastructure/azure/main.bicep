@@ -70,6 +70,10 @@ param sessionSecret string
 @description('Distinct high-entropy >=32 char TOTP_ENCRYPTION_KEY stored in Key Vault.')
 param totpEncryptionKey string
 
+@secure()
+@description('Distinct high-entropy >=32 char PASSCODE_HMAC_SECRET stored in Key Vault.')
+param passcodeHmacSecret string
+
 @description('Optional custom HTTPS origin (defaults to https://<webAppName>.azurewebsites.net when empty).')
 param customPublicOrigin string = ''
 
@@ -277,12 +281,23 @@ resource kvSecretTotp 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
   }
 }
 
+resource kvSecretPasscodeHmac 'Microsoft.KeyVault/vaults/secrets@2023-07-01' = {
+  parent: keyVault
+  name: 'vajra-passcode-hmac-secret'
+  properties: {
+    value: passcodeHmacSecret
+  }
+}
+
+// IMPORTANT: OwnerEventBroadcaster (SSE) uses in-process memory. Keep numberOfWorkers = 1
+// until a shared PostgreSQL LISTEN/NOTIFY or Redis pub/sub backplane is added before scaling out.
 resource appServicePlan 'Microsoft.Web/serverfarms@2023-01-01' = {
   name: appPlanName
   location: location
   kind: 'linux'
   sku: {
     name: appServiceSkuName
+    capacity: 1
   }
   properties: {
     reserved: true
@@ -353,6 +368,10 @@ resource webApp 'Microsoft.Web/sites@2023-01-01' = {
         {
           name: 'TOTP_ENCRYPTION_KEY'
           value: '@Microsoft.KeyVault(SecretUri=${kvSecretTotp.properties.secretUri})'
+        }
+        {
+          name: 'PASSCODE_HMAC_SECRET'
+          value: '@Microsoft.KeyVault(SecretUri=${kvSecretPasscodeHmac.properties.secretUri})'
         }
         {
           name: 'APPLICATIONINSIGHTS_CONNECTION_STRING'

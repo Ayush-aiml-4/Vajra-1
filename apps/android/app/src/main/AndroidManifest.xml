@@ -37,5 +37,12 @@
         <activity android:name=".ui.EnrollmentActivity" android:exported="false" />
         <activity android:name=".ui.SettingsActivity" android:exported="false" />
         <activity android:name=".ui.PrivacyActivity" android:exported="false" />
+        <receiver
+            android:name=".work.StopRingReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.vajra.companion.action.STOP_RING" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

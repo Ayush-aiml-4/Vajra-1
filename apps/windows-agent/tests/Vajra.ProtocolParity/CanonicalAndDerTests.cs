@@ -160,4 +160,35 @@ public class CanonicalAndDerTests
         Assert.False(PairingBundleParser.TryParse("""{"deviceId":"only-id"}""", out _, out _, out _, out _, out _, out var missingErr));
         Assert.False(string.IsNullOrWhiteSpace(missingErr));
     }
+
+    [Fact]
+    public void PairingBundleParser_PrioritizesServerUrlAndReadsOptionalPasscode()
+    {
+        var json = """
+        {
+          "protocol": "VAJRA_ENROLL_V1",
+          "serverUrl": "https://vajra.campus.example",
+          "deviceId": "00000000-0000-4000-8000-000000000099",
+          "enrollmentToken": "VJR-ABCD-1234",
+          "challengeNonce": "0123456789abcdef",
+          "verificationPasscode": "842195"
+        }
+        """;
+        Assert.True(PairingBundleParser.TryParse(
+            json,
+            out var serverUrl,
+            out _,
+            out _,
+            out _,
+            out _,
+            out var passcode,
+            out var err));
+        Assert.Null(err);
+        Assert.Equal("https://vajra.campus.example", serverUrl);
+        Assert.Equal("842195", passcode);
+
+        Assert.False(PairingBundleParser.TryParse(
+            """{"protocol":"UNKNOWN_V9","serverUrl":"https://vajra.example","deviceId":"id","enrollmentToken":"tok","challengeNonce":"nonce"}""",
+            out _, out _, out _, out _, out _, out _, out _));
+    }
 }

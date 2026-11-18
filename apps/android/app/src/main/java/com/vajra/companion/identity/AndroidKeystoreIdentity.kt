@@ -119,15 +119,34 @@ class AndroidKeystoreIdentity(private val context: Context) {
         val ks = KeyStore.getInstance(ANDROID_KEYSTORE).apply { load(null) }
         if (ks.containsAlias(KEY_ALIAS)) ks.deleteEntry(KEY_ALIAS)
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+        context.getSharedPreferences("vajra_cmd_processed", Context.MODE_PRIVATE).edit().clear().apply()
+        context.getSharedPreferences("vajra_cmd_state", Context.MODE_PRIVATE).edit().clear().apply()
     }
 
-    fun saveMeta(deviceId: String, serverBaseUrl: String, lifecycleState: String) {
-        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+    fun clearEnrollmentMeta() {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
+    }
+
+    fun saveMeta(
+        deviceId: String,
+        serverBaseUrl: String,
+        lifecycleState: String,
+        pendingFingerprint: String? = null
+    ) {
+        val editor = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString("deviceId", deviceId)
             .putString("serverBaseUrl", serverBaseUrl.trimEnd('/'))
             .putString("lifecycleState", lifecycleState)
             .putLong("updatedAt", System.currentTimeMillis())
-            .apply()
+
+        if (lifecycleState == "ENROLLMENT_PENDING") {
+            if (!pendingFingerprint.isNullOrBlank()) {
+                editor.putString("pendingFingerprint", pendingFingerprint)
+            }
+        } else {
+            editor.remove("pendingFingerprint")
+        }
+        editor.apply()
     }
 
     fun loadMeta(): JSONObject? {
@@ -137,6 +156,7 @@ class AndroidKeystoreIdentity(private val context: Context) {
             put("deviceId", deviceId)
             put("serverBaseUrl", p.getString("serverBaseUrl", "") ?: "")
             put("lifecycleState", p.getString("lifecycleState", "UNREGISTERED") ?: "UNREGISTERED")
+            put("pendingFingerprint", p.getString("pendingFingerprint", "") ?: "")
             put("lastHeartbeatAt", p.getLong("lastHeartbeatAt", 0L))
             put("updatedAt", p.getLong("updatedAt", 0L))
         }

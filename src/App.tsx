@@ -78,6 +78,15 @@ import {
   evaluateUrlSafetyPreview,
   ThreatCheckAnalysis,
 } from './components/securityCopy.ts';
+import {
+  VAJRA_OWNER_SYNC_CHANNEL,
+  OwnerSyncMessage,
+  buildApprovalNotificationTag,
+  buildPendingApprovalNotificationSpec,
+  buildReviewCleanupUrl,
+  parseReviewDeviceIdFromSearch,
+  resolveAuthoritativeApprovalTarget,
+} from './lib/ownerNotifications.ts';
 
 type NavSection =
   | 'Overview'
@@ -729,6 +738,9 @@ export default function App() {
     }
   }, [performResilientAuthFetch, triggerGatewaySessionRefresh]);
 
+  const swRegistrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const ownerSyncChannelRef = useRef<BroadcastChannel | null>(null);
+
   const maybeSendBrowserNotification = useCallback(
     (title: string, body: string) => {
       if (
@@ -739,11 +751,24 @@ export default function App() {
       ) {
         return;
       }
-      try {
-        new window.Notification(title, {
-          body: body.slice(0, 140),
-          tag: 'vajra-security-alert',
+      const options: NotificationOptions = {
+        body: body.slice(0, 140),
+        icon: '/favicon.svg',
+        tag: 'vajra-security-alert',
+      };
+      const swReg = swRegistrationRef.current;
+      if (swReg && swReg.active && typeof swReg.showNotification === 'function') {
+        void swReg.showNotification(title, options).catch(() => {
+          try {
+            new window.Notification(title, options);
+          } catch {
+            // Ignore in restricted environments
+          }
         });
+        return;
+      }
+      try {
+        new window.Notification(title, options);
       } catch {
         // Ignore if browser blocks Notification constructor in sandboxed contexts
       }
@@ -1038,28 +1063,59 @@ export default function App() {
     }
   }, []);
 
+  const closeApprovalNotifications = useCallback(async (deviceId: string) => {
+    if (!deviceId || typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+      return;
+    }
+    try {
+      const reg =
+        swRegistrationRef.current ??
+        (await navigator.serviceWorker.getRegistration().catch(() => null));
+      if (!reg || typeof reg.getNotifications !== 'function') return;
+      const notifications = await reg.getNotifications({
+        tag: buildApprovalNotificationTag(deviceId),
+      });
+      for (const notif of notifications) {
+        notif.close();
+      }
+    } catch {
+      // Ignore notification cleanup errors in restricted environments
+    }
+  }, []);
+
   // Authenticated fetch from backend before opening approval review modal
   // Strictly verifies real backend state instead of trusting notification payloads
-  const openReviewModalForDevice = useCallback(async (targetDeviceId?: string) => {
-    try {
-      const res = await fetch('/api/devices/pending-approvals', {
-        credentials: 'same-origin',
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      const list: PendingDeviceApprovalDto[] = Array.isArray(data.pendingApprovals)
-        ? data.pendingApprovals
-        : [];
-      setPendingApprovals(list);
+  const openReviewModalForDevice = useCallback(
+    async (targetDeviceId?: string) => {
+      try {
+        const res = await fetch('/api/devices/pending-approvals', {
+          credentials: 'same-origin',
+          headers: { Accept: 'application/json' },
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const list: PendingDeviceApprovalDto[] = Array.isArray(data.pendingApprovals)
+          ? data.pendingApprovals
+          : [];
+        setPendingApprovals(list);
 
-      if (list.length === 0) return;
+        const resolution = resolveAuthoritativeApprovalTarget(list, targetDeviceId);
+        if (resolution.status === 'STALE') {
+          notifiedDeviceIdsRef.current.delete(resolution.targetDeviceId);
+          void closeApprovalNotifications(resolution.targetDeviceId);
+          showToast('This device approval request is no longer pending.', 'info');
+          return;
+        }
+        if (resolution.status === 'EMPTY') {
+          if (targetDeviceId) {
+            notifiedDeviceIdsRef.current.delete(targetDeviceId);
+            void closeApprovalNotifications(targetDeviceId);
+            showToast('This device approval request is no longer pending.', 'info');
+          }
+          return;
+        }
 
-      const target = targetDeviceId
-        ? list.find((p) => p.deviceId === targetDeviceId) || list[0]
-        : list[0];
-
-      if (target) {
+        const target = resolution.device;
         setAwaitingDeviceDetails({
           deviceName: target.name,
           deviceType: target.deviceType,
@@ -1071,11 +1127,12 @@ export default function App() {
         setNewDeviceType(target.deviceType === 'WINDOWS' ? 'WINDOWS' : 'ANDROID');
         setConnectWizardStep(3);
         setConnectModalOpen(true);
+      } catch {
+        // Network failure handled gracefully
       }
-    } catch {
-      // Network failure handled gracefully
-    }
-  }, []);
+    },
+    [closeApprovalNotifications, showToast]
+  );
 
   const notifyOwnerOfPendingDevice = useCallback(
     (deviceId: string) => {
@@ -1085,21 +1142,51 @@ export default function App() {
       }
       notifiedDeviceIdsRef.current.add(deviceId);
 
+      // Synchronize across open tabs of this owner console so sibling tabs avoid duplicate popups/chimes
+      try {
+        const syncMsg: OwnerSyncMessage = { type: 'DEVICE_NOTIFIED', deviceId };
+        ownerSyncChannelRef.current?.postMessage(syncMsg);
+      } catch {
+        // Ignore closed or restricted BroadcastChannel
+      }
+
       // Play subtle audio cue if permitted
       playApprovalChime();
 
-      // Native browser notification
+      // Native browser notification (prefer Service Worker registration when active)
       if (
         typeof window !== 'undefined' &&
         'Notification' in window &&
         Notification.permission === 'granted'
       ) {
-        try {
-          const notification = new Notification('VAJRA Security — Approval Required', {
-            body: 'An Android or Windows device is requesting authorization. Open VAJRA to review.',
-            icon: '/favicon.ico',
-            tag: `vajra-approval-${deviceId}`,
+        const spec = buildPendingApprovalNotificationSpec(deviceId);
+        const swReg = swRegistrationRef.current;
+        if (swReg && swReg.active && typeof swReg.showNotification === 'function') {
+          void swReg.showNotification(spec.title, spec).catch(() => {
+            try {
+              const notification = new Notification(spec.title, spec);
+              notification.onclick = () => {
+                try {
+                  window.focus();
+                } catch {
+                  // ignore
+                }
+                try {
+                  notification.close();
+                } catch {
+                  // ignore
+                }
+                void openReviewModalForDevice(deviceId);
+              };
+            } catch {
+              // System notification dispatch failed
+            }
           });
+          return;
+        }
+
+        try {
+          const notification = new Notification(spec.title, spec);
 
           notification.onclick = () => {
             try {
@@ -1144,13 +1231,14 @@ export default function App() {
             }
           }
 
-          // Clean up notified device IDs that are no longer pending
+          // Clean up notified device IDs and stale OS notifications that are no longer pending
           const activePendingIds = new Set(
             data.pendingApprovals.map((p: PendingDeviceApprovalDto) => p.deviceId)
           );
           for (const id of Array.from(notifiedDeviceIdsRef.current)) {
             if (!activePendingIds.has(id)) {
               notifiedDeviceIdsRef.current.delete(id);
+              void closeApprovalNotifications(id);
             }
           }
 
@@ -1180,7 +1268,7 @@ export default function App() {
     } catch {
       // transient network poll error ignored
     }
-  }, [currentUser?.id, notifyOwnerOfPendingDevice]);
+  }, [currentUser?.id, notifyOwnerOfPendingDevice, closeApprovalNotifications]);
 
   // Real-time Owner Event Stream (SSE) + Background Recovery Polling
   useEffect(() => {
@@ -1273,6 +1361,7 @@ export default function App() {
             const p = parsed.payload;
             if (p?.deviceId) {
               notifiedDeviceIdsRef.current.delete(p.deviceId);
+              void closeApprovalNotifications(p.deviceId);
               setPendingApprovals((prev) => prev.filter((item) => item.deviceId !== p.deviceId));
               if (connectModalOpenRef.current && pairedReadyDeviceIdRef.current === p.deviceId) {
                 setConnectWizardStep(4);
@@ -1293,6 +1382,7 @@ export default function App() {
             const p = parsed.payload;
             if (p?.deviceId) {
               notifiedDeviceIdsRef.current.delete(p.deviceId);
+              void closeApprovalNotifications(p.deviceId);
               setPendingApprovals((prev) => prev.filter((item) => item.deviceId !== p.deviceId));
               if (connectModalOpenRef.current && pairedReadyDeviceIdRef.current === p.deviceId) {
                 closeConnectDeviceModal();
@@ -1378,6 +1468,100 @@ export default function App() {
     fetchAuditTrail,
     closeConnectDeviceModal,
     notifyOwnerOfPendingDevice,
+    closeApprovalNotifications,
+  ]);
+
+  // Service Worker registration & notification-click deep link handling
+  useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return;
+    let isCancelled = false;
+
+    void navigator.serviceWorker
+      .register('/sw.js')
+      .then((reg) => {
+        if (!isCancelled) {
+          swRegistrationRef.current = reg;
+        }
+      })
+      .catch(() => {
+        // Ignore registration errors in unsupported or sandboxed contexts
+      });
+
+    const handleSwMessage = (event: MessageEvent) => {
+      const payload = event.data as { type?: string; deviceId?: string } | null;
+      if (payload?.type === 'VAJRA_OPEN_REVIEW_MODAL' && currentUser) {
+        void openReviewModalForDevice(payload.deviceId);
+      }
+    };
+
+    navigator.serviceWorker.addEventListener('message', handleSwMessage);
+    return () => {
+      isCancelled = true;
+      navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+    };
+  }, [currentUser, openReviewModalForDevice]);
+
+  // Handle ?reviewDeviceId=<id> deep-link after owner authentication
+  useEffect(() => {
+    if (!currentUser || typeof window === 'undefined') return;
+    const reviewId = parseReviewDeviceIdFromSearch(window.location.search);
+    if (!reviewId) return;
+    const cleanUrl = buildReviewCleanupUrl(
+      window.location.pathname,
+      window.location.search,
+      window.location.hash
+    );
+    window.history.replaceState({}, '', cleanUrl);
+    void openReviewModalForDevice(reviewId);
+  }, [currentUser, openReviewModalForDevice]);
+
+  // Cross-tab owner synchronization via BroadcastChannel
+  useEffect(() => {
+    if (!currentUser || typeof BroadcastChannel === 'undefined') {
+      ownerSyncChannelRef.current = null;
+      return;
+    }
+    const channel = new BroadcastChannel(VAJRA_OWNER_SYNC_CHANNEL);
+    ownerSyncChannelRef.current = channel;
+
+    const handleMessage = (event: MessageEvent) => {
+      const msg = event.data as OwnerSyncMessage | null;
+      if (!msg || typeof msg.type !== 'string') return;
+      if (msg.type === 'DEVICE_NOTIFIED' && msg.deviceId) {
+        notifiedDeviceIdsRef.current.add(msg.deviceId);
+      } else if (msg.type === 'DEVICE_RESOLVED' && msg.deviceId) {
+        notifiedDeviceIdsRef.current.delete(msg.deviceId);
+        void closeApprovalNotifications(msg.deviceId);
+        setPendingApprovals((prev) => prev.filter((item) => item.deviceId !== msg.deviceId));
+        if (connectModalOpenRef.current && pairedReadyDeviceIdRef.current === msg.deviceId) {
+          if (msg.resolution === 'APPROVED') {
+            setConnectWizardStep(4);
+          } else {
+            closeConnectDeviceModal();
+          }
+        }
+        void fetchEnrolledDevices();
+        void fetchNotifications();
+      } else if (msg.type === 'PENDING_UPDATED') {
+        void fetchPendingApprovals();
+      }
+    };
+
+    channel.addEventListener('message', handleMessage);
+    return () => {
+      channel.removeEventListener('message', handleMessage);
+      channel.close();
+      if (ownerSyncChannelRef.current === channel) {
+        ownerSyncChannelRef.current = null;
+      }
+    };
+  }, [
+    currentUser?.id,
+    closeApprovalNotifications,
+    closeConnectDeviceModal,
+    fetchEnrolledDevices,
+    fetchNotifications,
+    fetchPendingApprovals,
   ]);
 
   // Live polling for device scan & passcode verification in Step 2
@@ -2817,6 +3001,7 @@ export default function App() {
     try {
       setEnrollmentStepBusy(true);
       notifiedDeviceIdsRef.current.delete(deviceId);
+      void closeApprovalNotifications(deviceId);
       const res = await fetch(`/api/devices/${deviceId}/enrollment/confirm`, {
         method: 'POST',
         credentials: 'same-origin',
@@ -2839,6 +3024,16 @@ export default function App() {
 
       setPendingApprovals((prev) => prev.filter((p) => p.deviceId !== deviceId));
       setConnectWizardStep(4);
+      try {
+        const resolvedMsg: OwnerSyncMessage = {
+          type: 'DEVICE_RESOLVED',
+          deviceId,
+          resolution: 'APPROVED',
+        };
+        ownerSyncChannelRef.current?.postMessage(resolvedMsg);
+      } catch {
+        // ignore BroadcastChannel errors
+      }
       showToast(`${data.device?.name ?? newDeviceName} is now protected by VAJRA.`, 'success');
       await Promise.all([
         fetchEnrolledDevices(),
@@ -2858,6 +3053,7 @@ export default function App() {
     try {
       setEnrollmentStepBusy(true);
       notifiedDeviceIdsRef.current.delete(deviceId);
+      void closeApprovalNotifications(deviceId);
       const res = await fetch(`/api/devices/${deviceId}/enrollment/reject`, {
         method: 'POST',
         credentials: 'same-origin',
@@ -2879,6 +3075,16 @@ export default function App() {
       setPendingApprovals((prev) => prev.filter((p) => p.deviceId !== deviceId));
       if (pairedReadyDeviceId === deviceId) {
         closeConnectDeviceModal();
+      }
+      try {
+        const rejectedMsg: OwnerSyncMessage = {
+          type: 'DEVICE_RESOLVED',
+          deviceId,
+          resolution: 'REJECTED',
+        };
+        ownerSyncChannelRef.current?.postMessage(rejectedMsg);
+      } catch {
+        // ignore BroadcastChannel errors
       }
       showToast(`Enrollment declined for ${data.device?.name ?? 'device'}.`, 'info');
       await Promise.all([

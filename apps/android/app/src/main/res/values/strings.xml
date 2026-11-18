@@ -49,4 +49,6 @@
     <string name="step_expired_title">Pairing Challenge Expired</string>
     <string name="step_expired_desc">The enrollment challenge has expired. Please generate a fresh pairing QR code in the VAJRA console.</string>
     <string name="btn_restart_pairing">Restart Pairing</string>
+    <string name="btn_check_status_now">Check Approval Status Now</string>
+    <string name="btn_cancel_restart_pairing">Cancel &amp; Restart Pairing</string>
 </resources>

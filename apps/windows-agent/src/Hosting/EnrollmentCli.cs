@@ -1,3 +1,4 @@
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
@@ -10,7 +11,8 @@ using Vajra.WindowsAgent.Networking;
 namespace Vajra.WindowsAgent.Hosting;
 
 /// <summary>
-/// Interactive enrollment: requires a one-time token + challenge from the web console (Plane 1 initiate).
+/// Interactive enrollment: requires a one-time token, challenge, and 6-digit verification passcode
+/// from the web console (Plane 1 initiate).
 /// Owner must confirm enrollment in the console after submit (Plane 1 confirm → TRUSTED).
 /// </summary>
 public static class EnrollmentCli
@@ -23,12 +25,13 @@ public static class EnrollmentCli
         string[] args,
         CancellationToken ct)
     {
-        // Args: enroll [--server <url>] [--bundle <json-or-file>] [--token <token> --device-id <uuid> --challenge-nonce <hex>]
+        // Args: enroll [--server <url>] [--bundle <json-or-file>] [--token <token> --device-id <uuid> --passcode <6-digits> --challenge-nonce <hex>]
         string? serverOverride = null;
         string? bundleArg = null;
         string? token = null;
         string? deviceId = null;
         string? challengeNonce = null;
+        string? passcode = null;
         string? expiresAtIso = null;
 
         for (var i = 0; i < args.Length; i++)
@@ -38,17 +41,19 @@ public static class EnrollmentCli
             else if (args[i] == "--token" && i + 1 < args.Length) token = args[++i];
             else if (args[i] == "--device-id" && i + 1 < args.Length) deviceId = args[++i];
             else if (args[i] == "--challenge-nonce" && i + 1 < args.Length) challengeNonce = args[++i];
+            else if ((args[i] == "--passcode" || args[i] == "-p") && i + 1 < args.Length) passcode = args[++i];
         }
 
         if (!string.IsNullOrWhiteSpace(bundleArg))
         {
-            if (!TryParsePairingBundle(
+            if (!PairingBundleParser.TryParse(
                 bundleArg,
                 out var bundleServer,
                 out var bundleToken,
                 out var bundleDeviceId,
                 out var bundleNonce,
                 out var bundleExpiresAt,
+                out var bundlePasscode,
                 out var bundleError))
             {
                 Console.Error.WriteLine($"Invalid pairing bundle: {bundleError}");
@@ -60,6 +65,7 @@ public static class EnrollmentCli
             deviceId ??= bundleDeviceId;
             challengeNonce ??= bundleNonce;
             expiresAtIso ??= bundleExpiresAt;
+            passcode ??= bundlePasscode;
         }
 
         if (!string.IsNullOrWhiteSpace(expiresAtIso) &&
@@ -79,9 +85,22 @@ public static class EnrollmentCli
             string.IsNullOrWhiteSpace(challengeNonce))
         {
             Console.Error.WriteLine(
-                "Usage: Vajra.WindowsAgent enroll [--server <URL>] (--bundle <JSON_OR_PATH> | --token <TOKEN> --device-id <UUID> --challenge-nonce <HEX>)");
+                "Usage: Vajra.WindowsAgent enroll [--server <URL>] (--bundle <JSON_OR_PATH> | --token <TOKEN> --device-id <UUID> --passcode <6_DIGITS> --challenge-nonce <HEX>)");
             Console.Error.WriteLine(
                 "Obtain the pairing bundle or CLI command from the VAJRA web console Connect Device dialog.");
+            return 2;
+        }
+
+        if (string.IsNullOrWhiteSpace(passcode) && !Console.IsInputRedirected)
+        {
+            Console.Write("Enter 6-digit verification passcode from VAJRA console: ");
+            passcode = Console.ReadLine();
+        }
+
+        var normalizedPasscode = new string((passcode ?? string.Empty).Where(char.IsDigit).ToArray());
+        if (normalizedPasscode.Length != 6)
+        {
+            Console.Error.WriteLine("A 6-digit verification passcode is required (--passcode <6_DIGITS>).");
             return 2;
         }
 
@@ -98,21 +117,26 @@ public static class EnrollmentCli
         var timestamp = DeviceRequestSigner.UtcTimestampIso();
         var clientNonce = DeviceRequestSigner.NewNonce();
         var transcript = DeviceRequestSigner.BuildEnrollmentTranscript(
-            deviceId, token, challengeNonce, identity.PublicKeyFingerprint, timestamp, clientNonce);
+            deviceId.Trim(), token.Trim(), challengeNonce.Trim(), identity.PublicKeyFingerprint, timestamp, clientNonce);
         var signature = DeviceRequestSigner.SignTranscript(transcript, key);
         key.Dispose();
 
         var body = new
         {
             enrollmentToken = token.Trim(),
+            verificationPasscode = normalizedPasscode,
             publicKeyPem = identity.PublicKeyPem,
             keyAlgorithm = "ECDSA_P256",
             signatureBase64 = signature,
             timestampIso = timestamp,
             clientNonce,
+            deviceName = Environment.MachineName,
+            osVersion = RuntimeInformation.OSDescription,
+            agentVersion = options.AgentVersion,
+            hardwareBacked = false,
         };
 
-        logger.LogInformation("Submitting enrollment PoP for device {DeviceId} (token redacted).", deviceId);
+        logger.LogInformation("Submitting enrollment PoP for device {DeviceId} (token/passcode redacted).", deviceId.Trim());
         try
         {
             using var response = await api.EnrollmentSubmitAsync(body, ct).ConfigureAwait(false);
@@ -123,7 +147,10 @@ public static class EnrollmentCli
                 store.ClearIdentity();
                 logger.LogError("Enrollment submit failed: HTTP {Status}. Body length={Len}",
                     (int)response.StatusCode, responseText.Length);
-                Console.Error.WriteLine($"Enrollment failed: HTTP {(int)response.StatusCode}");
+                var serverMessage = ExtractSafeErrorMessage(responseText);
+                Console.Error.WriteLine(serverMessage is not null
+                    ? $"Enrollment failed (HTTP {(int)response.StatusCode}): {serverMessage}"
+                    : $"Enrollment failed: HTTP {(int)response.StatusCode}");
                 return 1;
             }
         }
@@ -139,12 +166,33 @@ public static class EnrollmentCli
         identity.EnrolledAt = DateTimeOffset.UtcNow;
         store.SaveIdentity(identity);
 
-        Console.WriteLine("Enrollment public key submitted successfully.");
-        Console.WriteLine($"Device ID: {deviceId}");
+        Console.WriteLine("Enrollment public key and verification passcode submitted successfully.");
+        Console.WriteLine($"Device ID: {deviceId.Trim()}");
         Console.WriteLine($"Fingerprint: {identity.PublicKeyFingerprint}");
         Console.WriteLine("Next step: confirm the device in the VAJRA web console (owner session).");
         Console.WriteLine("The agent will only fully operate after lifecycle reaches TRUSTED/ACTIVE.");
         return 0;
+    }
+
+    private static string? ExtractSafeErrorMessage(string rawJson)
+    {
+        if (string.IsNullOrWhiteSpace(rawJson)) return null;
+        try
+        {
+            using var doc = JsonDocument.Parse(rawJson);
+            if (doc.RootElement.TryGetProperty("error", out var errEl) &&
+                errEl.ValueKind == JsonValueKind.Object &&
+                errEl.TryGetProperty("message", out var msgEl) &&
+                msgEl.ValueKind == JsonValueKind.String)
+            {
+                return msgEl.GetString();
+            }
+        }
+        catch
+        {
+            // ignore parse error
+        }
+        return null;
     }
 
     public static bool TryParsePairingBundle(

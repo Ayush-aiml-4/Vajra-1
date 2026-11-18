@@ -56,7 +56,10 @@ class EnrollmentActivity : AppCompatActivity() {
     )
 
     private var activeBundle: ParsedPairingBundle? = null
+    private var pendingDeviceId: String? = null
+    private var pendingBaseUrl: String? = null
     private var isPollingApproval = false
+    private var pollingJob: kotlinx.coroutines.Job? = null
 
     // Camera2 in-app viewfinder and frame decoder resources
     private var cameraDevice: CameraDevice? = null
@@ -382,6 +385,7 @@ class EnrollmentActivity : AppCompatActivity() {
         val progressAwaiting = findViewById<ProgressBar>(R.id.progressAwaiting)
         val txtAwaitingTitle = findViewById<TextView>(R.id.txtAwaitingTitle)
         val txtAwaitingDesc = findViewById<TextView>(R.id.txtAwaitingDesc)
+        val btnCheckStatusNow = findViewById<Button>(R.id.btnCheckStatusNow)
         val btnRestartPairing = findViewById<Button>(R.id.btnRestartPairing)
         val btnDone = findViewById<Button>(R.id.btnDone)
         val result = findViewById<TextView>(R.id.txtEnrollResult)
@@ -398,7 +402,8 @@ class EnrollmentActivity : AppCompatActivity() {
                 progressAwaiting?.visibility = View.VISIBLE
                 txtAwaitingTitle?.text = getString(R.string.step_awaiting_title)
                 txtAwaitingDesc?.text = getString(R.string.step_awaiting_desc)
-                btnRestartPairing?.visibility = View.GONE
+                btnCheckStatusNow?.visibility = View.VISIBLE
+                btnRestartPairing?.visibility = View.VISIBLE
             }
 
             layoutStepScan.visibility = if (step == 1) View.VISIBLE else View.GONE
@@ -407,9 +412,43 @@ class EnrollmentActivity : AppCompatActivity() {
             layoutStepConnected.visibility = if (step == 4) View.VISIBLE else View.GONE
         }
 
+        fun onApprovalConnected() {
+            updateStepVisuals(4)
+            lifecycleScope.launch {
+                delay(2000)
+                if (!isFinishing && !isDestroyed) {
+                    val intent = Intent(this@EnrollmentActivity, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
+                    }
+                    startActivity(intent)
+                    finish()
+                }
+            }
+        }
+
+        btnCheckStatusNow?.setOnClickListener {
+            val targetBaseUrl = pendingBaseUrl
+            val targetDeviceId = pendingDeviceId
+            if (!targetBaseUrl.isNullOrBlank() && !targetDeviceId.isNullOrBlank()) {
+                pollingJob?.cancel()
+                isPollingApproval = false
+                updateStepVisuals(3)
+                txtAwaitingDesc?.text = "Checking console approval status..."
+                startPollingApproval(targetBaseUrl, targetDeviceId, immediate = true) {
+                    onApprovalConnected()
+                }
+            }
+        }
+
         btnRestartPairing?.setOnClickListener {
+            pollingJob?.cancel()
             isPollingApproval = false
+            HeartbeatWorker.cancel(this)
+            CommandPollWorker.cancel(this)
+            AndroidKeystoreIdentity(this).deleteKey()
             activeBundle = null
+            pendingDeviceId = null
+            pendingBaseUrl = null
             result.text = ""
             updateStepVisuals(1)
         }
@@ -509,20 +548,12 @@ class EnrollmentActivity : AppCompatActivity() {
                 btnSubmitEnroll.isEnabled = true
                 if (outcome.success) {
                     result.text = ""
+                    pendingDeviceId = bundle.deviceId
+                    pendingBaseUrl = targetServer
                     txtFingerprintSummary.text = "Key fingerprint: ${outcome.fingerprint?.take(18)}..."
                     updateStepVisuals(3)
-                    startPollingApproval(targetServer, bundle.deviceId) {
-                        updateStepVisuals(4)
-                        lifecycleScope.launch {
-                            delay(2000)
-                            if (!isFinishing && !isDestroyed) {
-                                val intent = Intent(this@EnrollmentActivity, MainActivity::class.java).apply {
-                                    flags = Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_NEW_TASK
-                                }
-                                startActivity(intent)
-                                finish()
-                            }
-                        }
+                    startPollingApproval(targetServer, bundle.deviceId, immediate = false) {
+                        onApprovalConnected()
                     }
                 } else {
                     result.text = outcome.errorMessage ?: "Enrollment submission failed."
@@ -536,6 +567,29 @@ class EnrollmentActivity : AppCompatActivity() {
             }
             startActivity(intent)
             finish()
+        }
+
+        // Resume Step 3 automatically if Activity restarted while awaiting owner confirmation
+        val existingIdentity = AndroidKeystoreIdentity(this)
+        val savedMeta = existingIdentity.loadMeta()
+        if (
+            savedMeta != null &&
+            savedMeta.optString("lifecycleState") == "ENROLLMENT_PENDING" &&
+            existingIdentity.hasKey()
+        ) {
+            val savedDeviceId = savedMeta.optString("deviceId")
+            val savedUrl = savedMeta.optString("serverBaseUrl").ifBlank { defaultServer }
+            if (savedDeviceId.isNotBlank()) {
+                val fp = savedMeta.optString("pendingFingerprint")
+                    .ifBlank { existingIdentity.exportPublicIdentity().fingerprint }
+                pendingDeviceId = savedDeviceId
+                pendingBaseUrl = savedUrl
+                txtFingerprintSummary.text = "Key fingerprint: ${fp.take(18)}..."
+                updateStepVisuals(3)
+                startPollingApproval(savedUrl, savedDeviceId, immediate = true) {
+                    onApprovalConnected()
+                }
+            }
         }
     }
 
@@ -601,9 +655,7 @@ class EnrollmentActivity : AppCompatActivity() {
                     return EnrollmentOutcome(success = false, errorMessage = errMsg)
                 }
 
-                identity.saveMeta(bundle.deviceId, baseUrl, "ENROLLMENT_PENDING")
-                HeartbeatWorker.schedule(this)
-                CommandPollWorker.schedule(this)
+                identity.saveMeta(bundle.deviceId, baseUrl, "ENROLLMENT_PENDING", pub.fingerprint)
 
                 EnrollmentOutcome(success = true, fingerprint = pub.fingerprint)
             }
@@ -615,6 +667,7 @@ class EnrollmentActivity : AppCompatActivity() {
     private fun startPollingApproval(
         baseUrl: String,
         deviceId: String,
+        immediate: Boolean = false,
         onConnected: () -> Unit
     ) {
         if (isPollingApproval) return
@@ -623,6 +676,7 @@ class EnrollmentActivity : AppCompatActivity() {
         val progressAwaiting = findViewById<ProgressBar>(R.id.progressAwaiting)
         val txtAwaitingTitle = findViewById<TextView>(R.id.txtAwaitingTitle)
         val txtAwaitingDesc = findViewById<TextView>(R.id.txtAwaitingDesc)
+        val btnCheckStatusNow = findViewById<Button>(R.id.btnCheckStatusNow)
         val btnRestartPairing = findViewById<Button>(R.id.btnRestartPairing)
 
         val client = OkHttpClient.Builder()
@@ -630,7 +684,8 @@ class EnrollmentActivity : AppCompatActivity() {
             .readTimeout(10, TimeUnit.SECONDS)
             .build()
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        pollingJob?.cancel()
+        pollingJob = lifecycleScope.launch(Dispatchers.IO) {
             val url = "${baseUrl.trimEnd('/')}/api/devices/$deviceId/enrollment/status"
             var attempts = 0
             var consecutiveNetworkErrors = 0
@@ -638,7 +693,9 @@ class EnrollmentActivity : AppCompatActivity() {
             val maxAttempts = 120 // Up to 5 minutes of polling
 
             while (isActive && isPollingApproval && attempts < maxAttempts) {
-                delay(2500)
+                if (attempts > 0 || !immediate) {
+                    delay(2500)
+                }
                 if (!isPollingApproval || !isActive) break
                 attempts++
 
@@ -670,7 +727,7 @@ class EnrollmentActivity : AppCompatActivity() {
                                 val identity = AndroidKeystoreIdentity(this@EnrollmentActivity)
                                 identity.saveMeta(deviceId, baseUrl, resolvedState)
 
-                                // Enqueue immediate one-time heartbeat & command sync
+                                // Enqueue immediate one-time heartbeat & command sync only after owner approval
                                 HeartbeatWorker.enqueueImmediate(this@EnrollmentActivity)
                                 CommandPollWorker.enqueueImmediate(this@EnrollmentActivity)
                                 HeartbeatWorker.schedule(this@EnrollmentActivity)
@@ -682,9 +739,11 @@ class EnrollmentActivity : AppCompatActivity() {
                                 }
                                 return@launch
                             } else if (status == "REVOKED" || lifecycleState == "REVOKED" || status == "REJECTED") {
+                                AndroidKeystoreIdentity(this@EnrollmentActivity).saveMeta(deviceId, baseUrl, "REVOKED")
                                 withContext(Dispatchers.Main) {
                                     isPollingApproval = false
                                     progressAwaiting?.visibility = View.GONE
+                                    btnCheckStatusNow?.visibility = View.GONE
                                     txtAwaitingTitle?.text = getString(R.string.step_rejected_title)
                                     txtAwaitingDesc?.text = getString(R.string.step_rejected_desc)
                                     btnRestartPairing?.visibility = View.VISIBLE
@@ -700,6 +759,7 @@ class EnrollmentActivity : AppCompatActivity() {
                             withContext(Dispatchers.Main) {
                                 isPollingApproval = false
                                 progressAwaiting?.visibility = View.GONE
+                                btnCheckStatusNow?.visibility = View.GONE
                                 txtAwaitingTitle?.text = getString(R.string.step_expired_title)
                                 txtAwaitingDesc?.text = getString(R.string.step_expired_desc)
                                 btnRestartPairing?.visibility = View.VISIBLE
@@ -711,6 +771,7 @@ class EnrollmentActivity : AppCompatActivity() {
                                 withContext(Dispatchers.Main) {
                                     isPollingApproval = false
                                     progressAwaiting?.visibility = View.GONE
+                                    btnCheckStatusNow?.visibility = View.GONE
                                     txtAwaitingTitle?.text = "Enrollment Session Not Found"
                                     txtAwaitingDesc?.text = "Device session not found on server (HTTP 404). Please ensure the QR code was scanned from the active server session."
                                     btnRestartPairing?.visibility = View.VISIBLE
@@ -730,8 +791,9 @@ class EnrollmentActivity : AppCompatActivity() {
                                 withContext(Dispatchers.Main) {
                                     isPollingApproval = false
                                     progressAwaiting?.visibility = View.GONE
+                                    btnCheckStatusNow?.visibility = View.VISIBLE
                                     txtAwaitingTitle?.text = "Server Communication Error"
-                                    txtAwaitingDesc?.text = "Received persistent HTTP ${res.code} from server. Please check the server console."
+                                    txtAwaitingDesc?.text = "Received persistent HTTP ${res.code} from server. Tap Check Approval Status Now once the server is reachable."
                                     btnRestartPairing?.visibility = View.VISIBLE
                                 }
                                 return@launch
@@ -748,8 +810,9 @@ class EnrollmentActivity : AppCompatActivity() {
                         withContext(Dispatchers.Main) {
                             isPollingApproval = false
                             progressAwaiting?.visibility = View.GONE
+                            btnCheckStatusNow?.visibility = View.VISIBLE
                             txtAwaitingTitle?.text = "Connection Failure"
-                            txtAwaitingDesc?.text = "Unable to reach server at $baseUrl ($errDetail). Please verify your Wi-Fi/network and server URL."
+                            txtAwaitingDesc?.text = "Unable to reach server at $baseUrl ($errDetail). Verify network connectivity and tap Check Approval Status Now."
                             btnRestartPairing?.visibility = View.VISIBLE
                         }
                         return@launch
@@ -761,8 +824,9 @@ class EnrollmentActivity : AppCompatActivity() {
                 withContext(Dispatchers.Main) {
                     isPollingApproval = false
                     progressAwaiting?.visibility = View.GONE
-                    txtAwaitingTitle?.text = "Approval Pending Timeout"
-                    txtAwaitingDesc?.text = "Authorization request timed out after $maxAttempts checks. Please check the VAJRA console and tap Restart Pairing."
+                    btnCheckStatusNow?.visibility = View.VISIBLE
+                    txtAwaitingTitle?.text = "Approval Check Paused"
+                    txtAwaitingDesc?.text = "Automatic polling paused after $maxAttempts checks. Approve the device in the VAJRA console and tap Check Approval Status Now."
                     btnRestartPairing?.visibility = View.VISIBLE
                 }
             }

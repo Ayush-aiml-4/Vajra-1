@@ -16,6 +16,25 @@ public static class PairingBundleParser
         out string? deviceId,
         out string? challengeNonce,
         out string? expiresAt,
+        out string? error) =>
+        TryParse(
+            rawOrPath,
+            out serverUrl,
+            out token,
+            out deviceId,
+            out challengeNonce,
+            out expiresAt,
+            out _,
+            out error);
+
+    public static bool TryParse(
+        string rawOrPath,
+        out string? serverUrl,
+        out string? token,
+        out string? deviceId,
+        out string? challengeNonce,
+        out string? expiresAt,
+        out string? passcode,
         out string? error)
     {
         serverUrl = null;
@@ -23,6 +42,7 @@ public static class PairingBundleParser
         deviceId = null;
         challengeNonce = null;
         expiresAt = null;
+        passcode = null;
         error = null;
 
         if (string.IsNullOrWhiteSpace(rawOrPath))
@@ -53,7 +73,16 @@ public static class PairingBundleParser
             }
 
             var root = doc.RootElement;
-            serverUrl = ReadOptionalString(root, "origin")
+            var protocol = ReadOptionalString(root, "protocol");
+            if (!string.IsNullOrWhiteSpace(protocol) &&
+                !string.Equals(protocol, "VAJRA_ENROLL_V1", StringComparison.Ordinal))
+            {
+                error = $"Unsupported pairing bundle protocol: {protocol}.";
+                return false;
+            }
+
+            serverUrl = ReadOptionalString(root, "serverUrl")
+                        ?? ReadOptionalString(root, "origin")
                         ?? ReadOptionalString(root, "serverBaseUrl")
                         ?? ReadOptionalString(root, "server");
             token = ReadOptionalString(root, "enrollmentToken")
@@ -61,6 +90,8 @@ public static class PairingBundleParser
             deviceId = ReadOptionalString(root, "deviceId");
             challengeNonce = ReadOptionalString(root, "challengeNonce");
             expiresAt = ReadOptionalString(root, "expiresAt");
+            passcode = ReadOptionalString(root, "verificationPasscode")
+                       ?? ReadOptionalString(root, "passcode");
 
             if (string.IsNullOrWhiteSpace(token) ||
                 string.IsNullOrWhiteSpace(deviceId) ||

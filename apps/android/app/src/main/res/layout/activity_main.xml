@@ -247,6 +247,17 @@
 
             <!-- Action Controls -->
             <Button
+                android:id="@+id/btnResumePendingApproval"
+                android:layout_width="match_parent"
+                android:layout_height="44dp"
+                android:layout_marginTop="16dp"
+                android:backgroundTint="#C8A66A"
+                android:text="Resume Owner Approval Check"
+                android:textColor="#08090B"
+                android:textStyle="bold"
+                android:visibility="gone" />
+
+            <Button
                 android:id="@+id/btnRefreshStatus"
                 android:layout_width="match_parent"
                 android:layout_height="44dp"

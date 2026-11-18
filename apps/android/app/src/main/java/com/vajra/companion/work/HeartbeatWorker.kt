@@ -30,7 +30,7 @@ class HeartbeatWorker(
         val identity = AndroidKeystoreIdentity(applicationContext)
         val meta = identity.loadMeta() ?: return Result.success()
         val state = meta.optString("lifecycleState", "")
-        if (state in listOf("REVOKED", "DECOMMISSIONED", "COMPROMISED", "UNREGISTERED")) {
+        if (state !in listOf("TRUSTED", "ACTIVE", "OFFLINE")) {
             return Result.success()
         }
 
@@ -61,25 +61,26 @@ class HeartbeatWorker(
             api.heartbeat(payload).use { res ->
                 if (res.isSuccessful) {
                     identity.setLastHeartbeatAt(System.currentTimeMillis())
-                    if (state == "ENROLLMENT_PENDING" || state == "TRUSTED" || state == "OFFLINE" || state == "ACTIVE") {
-                        identity.saveMeta(
-                            meta.getString("deviceId"),
-                            baseUrl,
-                            "ACTIVE"
-                        )
-                    }
+                    identity.saveMeta(
+                        meta.getString("deviceId"),
+                        baseUrl,
+                        "ACTIVE"
+                    )
                     Result.success()
                 } else if (res.code == 401 || res.code == 403) {
                     val errBody = res.body?.string().orEmpty()
                     if (
-                        (state == "ACTIVE" || state == "TRUSTED" || state == "OFFLINE") &&
-                        (errBody.contains("REVOKED") || errBody.contains("DECOMMISSIONED") || errBody.contains("DEVICE_CREDENTIAL_INACTIVE"))
+                        errBody.contains("REVOKED") ||
+                        errBody.contains("DECOMMISSIONED") ||
+                        errBody.contains("DEVICE_CREDENTIAL_INACTIVE")
                     ) {
                         identity.saveMeta(
                             meta.getString("deviceId"),
                             baseUrl,
                             "REVOKED"
                         )
+                        HeartbeatWorker.cancel(applicationContext)
+                        CommandPollWorker.cancel(applicationContext)
                     }
                     Result.failure()
                 } else {

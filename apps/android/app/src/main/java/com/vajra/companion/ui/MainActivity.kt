@@ -17,6 +17,7 @@ import com.vajra.companion.R
 import com.vajra.companion.identity.AndroidKeystoreIdentity
 import com.vajra.companion.work.CommandPollWorker
 import com.vajra.companion.work.HeartbeatWorker
+import com.vajra.companion.work.RingAlarmController
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -50,6 +51,10 @@ class MainActivity : AppCompatActivity() {
         }
 
         // Dashboard actions
+        findViewById<Button>(R.id.btnResumePendingApproval)?.setOnClickListener {
+            startActivity(Intent(this, EnrollmentActivity::class.java))
+        }
+
         findViewById<Button>(R.id.btnRefreshStatus)?.setOnClickListener {
             refresh()
         }
@@ -79,7 +84,8 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         refresh()
-        if (identity.loadMeta() != null) {
+        val state = identity.loadMeta()?.optString("lifecycleState", "") ?: ""
+        if (state in listOf("TRUSTED", "ACTIVE", "OFFLINE")) {
             HeartbeatWorker.enqueueImmediate(this)
             CommandPollWorker.enqueueImmediate(this)
             HeartbeatWorker.schedule(this)
@@ -164,6 +170,9 @@ class MainActivity : AppCompatActivity() {
             .setTitle(getString(R.string.disconnect_title))
             .setMessage(getString(R.string.disconnect_message))
             .setPositiveButton(getString(R.string.disconnect_confirm)) { _, _ ->
+                HeartbeatWorker.cancel(this)
+                CommandPollWorker.cancel(this)
+                RingAlarmController.stop(this)
                 identity.deleteKey()
                 refresh()
             }
@@ -198,6 +207,15 @@ class MainActivity : AppCompatActivity() {
                             "UNKNOWN"
                         }
                         identity.saveMeta(deviceId, baseUrl, resolvedState)
+                        if (resolvedState in listOf("TRUSTED", "ACTIVE", "OFFLINE")) {
+                            HeartbeatWorker.enqueueImmediate(this@MainActivity)
+                            CommandPollWorker.enqueueImmediate(this@MainActivity)
+                            HeartbeatWorker.schedule(this@MainActivity)
+                            CommandPollWorker.schedule(this@MainActivity)
+                        } else if (resolvedState in listOf("REVOKED", "DECOMMISSIONED")) {
+                            HeartbeatWorker.cancel(this@MainActivity)
+                            CommandPollWorker.cancel(this@MainActivity)
+                        }
                         withContext(Dispatchers.Main) {
                             renderStatusBadge(resolvedState, isLiveVerified = true)
                         }
@@ -219,6 +237,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun renderStatusBadge(lifecycle: String, isLiveVerified: Boolean) {
         val badgeStatus = findViewById<TextView>(R.id.badgeStatus) ?: return
+        val btnResumePending = findViewById<Button>(R.id.btnResumePendingApproval)
+        btnResumePending?.visibility = if (lifecycle == "ENROLLMENT_PENDING") View.VISIBLE else View.GONE
         when (lifecycle) {
             "ACTIVE", "TRUSTED" -> {
                 badgeStatus.text = if (isLiveVerified) "● PROTECTED (Verified)" else "● PROTECTED (Stale/Offline)"

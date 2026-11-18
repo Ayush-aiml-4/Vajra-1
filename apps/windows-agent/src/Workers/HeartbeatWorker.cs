@@ -84,7 +84,24 @@ public sealed class HeartbeatWorker : BackgroundService
                 }
                 else if ((int)response.StatusCode is 401 or 403)
                 {
-                    _logger.LogError("Heartbeat rejected ({StatusCode}). Credential may be revoked.", (int)response.StatusCode);
+                    var errBody = await response.Content.ReadAsStringAsync(stoppingToken).ConfigureAwait(false);
+                    if (errBody.Contains("REVOKED", StringComparison.OrdinalIgnoreCase) ||
+                        errBody.Contains("DECOMMISSIONED", StringComparison.OrdinalIgnoreCase) ||
+                        errBody.Contains("DEVICE_CREDENTIAL_INACTIVE", StringComparison.OrdinalIgnoreCase))
+                    {
+                        identity.LifecycleState = "REVOKED";
+                        _store.SaveIdentity(identity);
+                        _logger.LogError("Device revoked or decommissioned by owner ({StatusCode}). Halting heartbeats.", (int)response.StatusCode);
+                        continue;
+                    }
+                    if (errBody.Contains("DEVICE_NOT_TRUSTED", StringComparison.OrdinalIgnoreCase))
+                    {
+                        _logger.LogInformation("Heartbeat paused: awaiting owner approval in VAJRA console.");
+                    }
+                    else
+                    {
+                        _logger.LogError("Heartbeat rejected ({StatusCode}).", (int)response.StatusCode);
+                    }
                     backoff = TimeSpan.FromSeconds(Math.Min(_options.MaxRetryBackoffSeconds, backoff.TotalSeconds * 2));
                 }
                 else

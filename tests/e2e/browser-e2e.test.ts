@@ -147,6 +147,7 @@ describe('Browser E2E — Headless Chromium against live VAJRA full-stack server
     } catch {
       /* ignore */
     }
+    server.closeAllConnections?.();
     await new Promise<void>((resolve) => server.close(() => resolve()));
     if (prisma) {
       try {
@@ -373,6 +374,7 @@ describe('Browser E2E — Headless Chromium against live VAJRA full-stack server
         csrf: enrollInfo.csrf,
         submitBody: {
           enrollmentToken,
+          verificationPasscode: enrollInfo.enrollment.verificationPasscode,
           publicKeyPem: keyPair.publicKeyPem,
           keyAlgorithm: 'ECDSA_P256',
           signatureBase64,
@@ -565,18 +567,24 @@ describe('Browser E2E — Headless Chromium against live VAJRA full-stack server
     await connectDialog.getByRole('button', { name: 'Continue to Pairing' }).click();
 
     // Step 02: Pair using real browser WebCrypto ECDSA P-256 key generation & DER proof
-    await connectDialog.getByRole('button', { name: 'Complete Pairing' }).waitFor({
+    await connectDialog.getByRole('button', { name: /Developer & Simulator Options/i }).click();
+    await connectDialog.getByRole('button', { name: 'Simulate Pairing in Browser' }).waitFor({
       state: 'visible',
       timeout: 10000,
     });
-    await connectDialog.getByRole('button', { name: 'Complete Pairing' }).click();
+    await connectDialog.getByRole('button', { name: 'Simulate Pairing in Browser' }).click();
 
-    // Step 03: Owner approval
+    // Step 03: Owner approval -> Step 04: Protected
     await connectDialog.getByRole('button', { name: 'Approve & Protect Device' }).waitFor({
       state: 'visible',
       timeout: 10000,
     });
     await connectDialog.getByRole('button', { name: 'Approve & Protect Device' }).click();
+    await connectDialog.getByRole('button', { name: 'View in Device Inventory' }).waitFor({
+      state: 'visible',
+      timeout: 10000,
+    });
+    await connectDialog.getByRole('button', { name: 'View in Device Inventory' }).click();
     await connectDialog.waitFor({ state: 'hidden', timeout: 10000 });
 
     await page.getByText('Pixel-9-Wizard-E2E').first().waitFor({ state: 'visible', timeout: 10000 });
@@ -626,6 +634,7 @@ describe('Browser E2E — Headless Chromium against live VAJRA full-stack server
         await secondPage.getByText('Pixel-9-Wizard-E2E').first().waitFor({ state: 'visible', timeout: 10000 });
       } finally {
         await secondContext.close().catch(() => {});
+        secondServer.closeAllConnections?.();
         await new Promise<void>((resolve) => secondServer.close(() => resolve()));
         await secondPrisma.$disconnect().catch(() => {});
       }
@@ -1006,8 +1015,10 @@ describe('Browser E2E — Headless Chromium against live VAJRA full-stack server
         await iframeBrowser.close().catch(() => {});
       }
       if (parentServer) {
+        parentServer.closeAllConnections?.();
         await new Promise<void>((resolve) => parentServer!.close(() => resolve()));
       }
+      proxyServer.closeAllConnections?.();
       await new Promise<void>((resolve) => proxyServer.close(() => resolve()));
     }
   });
