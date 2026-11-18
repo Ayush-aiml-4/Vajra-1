@@ -122,18 +122,24 @@ class CommandPollWorker(
                     }
 
                     // Acknowledge receipt first (allow 409 if already acknowledged on prior attempt)
-                    try {
+                    val skipMissingOrGone = try {
                         api.acknowledge(id).use { ackRes ->
                             if (ackRes.code == 404 || ackRes.code == 410) {
                                 cmdStatePrefs.edit().putString(
                                     id,
                                     JSONObject().put("state", "SUBMITTED").toString()
                                 ).apply()
-                                continue
+                                true
+                            } else {
+                                false
                             }
                         }
                     } catch (_: Exception) {
                         // Proceed safely; /result still reports final status
+                        false
+                    }
+                    if (skipMissingOrGone) {
+                        continue
                     }
 
                     val (status, message, metadata) = if (isExpired) {
