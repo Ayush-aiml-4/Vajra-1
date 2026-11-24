@@ -15,13 +15,14 @@ object DeviceStatusResolver {
 
         return when {
             normLifecycle == "COMPROMISED" -> "COMPROMISED"
-            normLifecycle == "REVOKED" || normStatus == "REVOKED" || normStatus == "REJECTED" -> "REVOKED"
+            normLifecycle == "REVOKED" -> "REVOKED"
             normLifecycle == "DECOMMISSIONED" -> "DECOMMISSIONED"
             normLifecycle == "OFFLINE" -> "OFFLINE"
             normLifecycle == "LOST" -> "LOST"
             normLifecycle == "ENROLLMENT_PENDING" || normLifecycle == "PENDING" -> "ENROLLMENT_PENDING"
             normLifecycle == "UNREGISTERED" -> "UNREGISTERED"
             normLifecycle == "ACTIVE" || normLifecycle == "TRUSTED" -> normLifecycle
+            normStatus == "REVOKED" || normStatus == "REJECTED" -> "REVOKED"
             normStatus == "CONNECTED" -> "TRUSTED"
             normStatus == "AWAITING_OWNER_CONFIRMATION" || normStatus == "PENDING_SCAN" -> "ENROLLMENT_PENDING"
             normLifecycle.isNotBlank() -> normLifecycle

@@ -104,12 +104,23 @@ class SecurityRegressionTest {
         assertEquals("OFFLINE", DeviceStatusResolver.resolveLifecycleState("CONNECTED", "OFFLINE"))
         assertTrue(DeviceStatusResolver.isOperationalState("OFFLINE"))
 
+        assertEquals("COMPROMISED", DeviceStatusResolver.resolveLifecycleState("REVOKED", "COMPROMISED"))
         assertEquals("REVOKED", DeviceStatusResolver.resolveLifecycleState("REVOKED", "REVOKED"))
+        assertEquals("REVOKED", DeviceStatusResolver.resolveLifecycleState("REVOKED", null))
+        assertEquals("REVOKED", DeviceStatusResolver.resolveLifecycleState("REJECTED", ""))
+        assertEquals("REVOKED", DeviceStatusResolver.resolveLifecycleState("REVOKED", "UNKNOWN_CUSTOM"))
         assertEquals("DECOMMISSIONED", DeviceStatusResolver.resolveLifecycleState("REVOKED", "DECOMMISSIONED"))
+        assertEquals("DECOMMISSIONED", DeviceStatusResolver.resolveLifecycleState("REJECTED", "DECOMMISSIONED"))
+        assertEquals("LOST", DeviceStatusResolver.resolveLifecycleState("CONNECTED", "LOST"))
+        assertEquals("UNREGISTERED", DeviceStatusResolver.resolveLifecycleState("CONNECTED", "UNREGISTERED"))
         assertEquals("ENROLLMENT_PENDING", DeviceStatusResolver.resolveLifecycleState("AWAITING_OWNER_CONFIRMATION", "ENROLLMENT_PENDING"))
+        assertEquals("ENROLLMENT_PENDING", DeviceStatusResolver.resolveLifecycleState("AWAITING_OWNER_CONFIRMATION", null))
+        assertEquals("ENROLLMENT_PENDING", DeviceStatusResolver.resolveLifecycleState("PENDING_SCAN", ""))
         assertEquals("ENROLLMENT_PENDING", DeviceStatusResolver.resolveLifecycleState("", "PENDING"))
         assertEquals("TRUSTED", DeviceStatusResolver.resolveLifecycleState("CONNECTED", "TRUSTED"))
+        assertEquals("TRUSTED", DeviceStatusResolver.resolveLifecycleState("CONNECTED", null))
         assertEquals("ACTIVE", DeviceStatusResolver.resolveLifecycleState("CONNECTED", "ACTIVE"))
+        assertEquals("UNKNOWN", DeviceStatusResolver.resolveLifecycleState(null, null))
     }
 
     @Test
