@@ -15,7 +15,9 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.vajra.companion.BuildConfig
 import com.vajra.companion.identity.AndroidKeystoreIdentity
+import com.vajra.companion.identity.DeviceActivityLog
 import com.vajra.companion.network.VajraApiClient
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
@@ -66,10 +68,39 @@ class HeartbeatWorker(
                         baseUrl,
                         "ACTIVE"
                     )
+                    val batSummary = if (payload.has("batteryLevel")) {
+                        val pct = payload.optInt("batteryLevel", -1)
+                        val chg = if (payload.optBoolean("charging", false)) "charging" else "on battery"
+                        "Battery $pct% ($chg)"
+                    } else {
+                        "Battery telemetry unavailable"
+                    }
+                    DeviceActivityLog.record(
+                        context = applicationContext,
+                        category = "HEARTBEAT",
+                        status = "SUCCESS",
+                        title = "Signed Heartbeat Delivered",
+                        detail = "ECDSA P-256 signed check-in accepted (HTTP ${res.code}) · $batSummary"
+                    )
                     Result.success()
                 } else if (res.code == 401 || res.code == 403) {
                     val errBody = res.body?.string().orEmpty()
-                    if (
+                    if (errBody.contains("DEVICE_COMPROMISED")) {
+                        identity.saveMeta(
+                            meta.getString("deviceId"),
+                            baseUrl,
+                            "COMPROMISED"
+                        )
+                        HeartbeatWorker.cancel(applicationContext)
+                        CommandPollWorker.cancel(applicationContext)
+                        DeviceActivityLog.record(
+                            context = applicationContext,
+                            category = "SECURITY",
+                            status = "FAILED",
+                            title = "Device Quarantined (Compromised)",
+                            detail = "Server rejected heartbeat (HTTP ${res.code}); device quarantined."
+                        )
+                    } else if (
                         errBody.contains("REVOKED") ||
                         errBody.contains("DECOMMISSIONED") ||
                         errBody.contains("DEVICE_CREDENTIAL_INACTIVE")
@@ -81,13 +112,42 @@ class HeartbeatWorker(
                         )
                         HeartbeatWorker.cancel(applicationContext)
                         CommandPollWorker.cancel(applicationContext)
+                        DeviceActivityLog.record(
+                            context = applicationContext,
+                            category = "SECURITY",
+                            status = "FAILED",
+                            title = "Device Credential Revoked",
+                            detail = "Server rejected heartbeat (HTTP ${res.code}); background workers stopped."
+                        )
+                    } else {
+                        DeviceActivityLog.record(
+                            context = applicationContext,
+                            category = "HEARTBEAT",
+                            status = "FAILED",
+                            title = "Heartbeat Rejected (HTTP ${res.code})",
+                            detail = "Plane-2 signature or device trust check rejected check-in."
+                        )
                     }
                     Result.failure()
                 } else {
+                    DeviceActivityLog.record(
+                        context = applicationContext,
+                        category = "HEARTBEAT",
+                        status = "WARNING",
+                        title = "Heartbeat Retry Scheduled",
+                        detail = "Server returned HTTP ${res.code}; WorkManager will retry."
+                    )
                     Result.retry()
                 }
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            DeviceActivityLog.record(
+                context = applicationContext,
+                category = "HEARTBEAT",
+                status = "WARNING",
+                title = "Heartbeat Network Error",
+                detail = e.localizedMessage ?: e.javaClass.simpleName
+            )
             Result.retry()
         }
     }
@@ -129,7 +189,7 @@ class HeartbeatWorker(
 
             val payload = JSONObject()
                 .put("connectivityStatus", "ONLINE")
-                .put("agentVersion", "0.1.0-android")
+                .put("agentVersion", "${BuildConfig.VERSION_NAME}-android")
                 .put("osVersion", "Android $osRelease")
                 .put("platform", "ANDROID")
 

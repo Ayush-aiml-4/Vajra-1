@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- VAJRA Core Obsidian & Graphite Palette -->
+    <color name="vajra_bg_obsidian">#08090B</color>
+    <color name="vajra_surface_card">#101216</color>
+    <color name="vajra_surface_elevated">#15181E</color>
+    <color name="vajra_surface_well">#0B0D11</color>
+    <color name="vajra_border_subtle">#22262F</color>
+    <color name="vajra_border_elevated">#2D3340</color>
+
+    <!-- Champagne Gold Accent -->
+    <color name="vajra_gold">#C8A66A</color>
+    <color name="vajra_gold_muted">#9C7F4E</color>
+    <color name="vajra_gold_tint">#1EC8A66A</color>
+    <color name="vajra_gold_border">#59C8A66A</color>
+    <color name="vajra_gold_surface">#16130D</color>
+
+    <!-- Deep Jade Security Success -->
+    <color name="vajra_jade">#75B798</color>
+    <color name="vajra_jade_deep">#3D8B67</color>
+    <color name="vajra_jade_surface">#0E1B15</color>
+    <color name="vajra_jade_border">#4D75B798</color>
+
+    <!-- Restrained Crimson Alert / Error -->
+    <color name="vajra_crimson">#E56B63</color>
+    <color name="vajra_crimson_surface">#1D1114</color>
+    <color name="vajra_crimson_border">#59E56B63</color>
+
+    <!-- Amber Caution / Stale -->
+    <color name="vajra_amber">#D49B4E</color>
+    <color name="vajra_amber_surface">#1C160E</color>
+    <color name="vajra_amber_border">#4DD49B4E</color>
+
+    <!-- Ivory & Slate Typography -->
+    <color name="vajra_text_primary">#F4F1EA</color>
+    <color name="vajra_text_secondary">#9AA0AA</color>
+    <color name="vajra_text_muted">#676D78</color>
+    <color name="vajra_text_on_accent">#08090B</color>
+</resources>

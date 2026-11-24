@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.media.Ringtone
+import com.vajra.companion.identity.DeviceActivityLog
 
 object RingAlarmController {
     const val NOTIFICATION_ID = 1001
@@ -12,6 +13,16 @@ object RingAlarmController {
 
     private val lock = Any()
     private var activeRingtone: Ringtone? = null
+
+    fun isRinging(): Boolean {
+        synchronized(lock) {
+            return try {
+                activeRingtone?.isPlaying == true
+            } catch (_: Exception) {
+                false
+            }
+        }
+    }
 
     fun start(ringtone: Ringtone?): Boolean {
         synchronized(lock) {
@@ -24,7 +35,20 @@ object RingAlarmController {
             if (ringtone == null) return false
             return try {
                 ringtone.play()
-                true
+                val playing = try {
+                    ringtone.isPlaying
+                } catch (_: Exception) {
+                    false
+                }
+                if (!playing) {
+                    try {
+                        ringtone.stop()
+                    } catch (_: Exception) {
+                        // ignore cleanup error
+                    }
+                    activeRingtone = null
+                }
+                playing
             } catch (_: Exception) {
                 activeRingtone = null
                 false
@@ -32,9 +56,11 @@ object RingAlarmController {
         }
     }
 
-    fun stop(context: Context) {
+    fun stop(context: Context): Boolean {
+        var wasPlaying = false
         synchronized(lock) {
             try {
+                wasPlaying = activeRingtone?.isPlaying == true
                 activeRingtone?.stop()
             } catch (_: Exception) {
                 // ignore
@@ -48,6 +74,16 @@ object RingAlarmController {
         } catch (_: Exception) {
             // ignore
         }
+        if (wasPlaying) {
+            DeviceActivityLog.record(
+                context = context,
+                category = "COMMAND",
+                status = "SUCCESS",
+                title = "Ring Alarm Stopped",
+                detail = "Active Find My Device alarm playback and notification cleared."
+            )
+        }
+        return wasPlaying
     }
 }
 

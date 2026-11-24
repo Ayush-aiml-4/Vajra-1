@@ -121,6 +121,7 @@ class AndroidKeystoreIdentity(private val context: Context) {
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("vajra_cmd_processed", Context.MODE_PRIVATE).edit().clear().apply()
         context.getSharedPreferences("vajra_cmd_state", Context.MODE_PRIVATE).edit().clear().apply()
+        DeviceActivityLog.clear(context)
     }
 
     fun clearEnrollmentMeta() {

@@ -1,313 +1,1011 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#08090B"
-    android:fillViewport="true">
+    android:background="@color/vajra_bg_obsidian"
+    android:orientation="vertical">
 
+    <!-- Custom Top App Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:gravity="center_vertical"
+        android:minHeight="62dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="18dp"
+        android:paddingVertical="10dp">
 
-        <!-- Top Header & Brand -->
+        <ImageView
+            android:id="@+id/imgBrandLogo"
+            android:layout_width="34dp"
+            android:layout_height="34dp"
+            android:contentDescription="@string/app_name"
+            android:src="@drawable/ic_vajra" />
+
         <LinearLayout
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:gravity="center_vertical"
-            android:orientation="horizontal">
-
-            <ImageView
-                android:id="@+id/imgBrandLogo"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:src="@drawable/ic_vajra" />
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="12dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:id="@+id/txtAppTitle"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/app_name"
-                    android:textColor="#F4F1EA"
-                    android:textSize="18sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/txtAppTagline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="@string/app_tagline"
-                    android:textColor="#C8A66A"
-                    android:textSize="11sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
+            android:layout_marginStart="12dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/badgeStatus"
+                android:id="@+id/txtAppTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="#161B22"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"
-                android:text="Not Enrolled"
-                android:textColor="#9499A3"
-                android:textSize="11sp"
+                android:text="@string/app_name"
+                android:textColor="@color/vajra_text_primary"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/txtAppTagline"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.08"
+                android:text="@string/app_tagline"
+                android:textColor="@color/vajra_gold"
+                android:textSize="10sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <!-- STATE A: ONBOARDING / NOT ENROLLED -->
+        <ImageButton
+            android:id="@+id/btnHeaderSettings"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="@string/settings_title"
+            android:padding="9dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_settings" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/vajra_border_subtle" />
+
+    <ScrollView
+        android:id="@+id/scrollMain"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+
         <LinearLayout
-            android:id="@+id/layoutOnboarding"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
             android:orientation="vertical"
-            android:visibility="visible">
+            android:paddingHorizontal="16dp"
+            android:paddingTop="14dp"
+            android:paddingBottom="28dp">
 
+            <!-- Status Strip -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="#101216"
-                android:orientation="vertical"
-                android:padding="20dp">
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
 
                 <TextView
-                    android:layout_width="match_parent"
+                    android:id="@+id/badgeStatus"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Zero-Trust Endpoint Protection"
-                    android:textColor="#F4F1EA"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="3dp"
-                    android:text="@string/onboarding_hero_desc"
-                    android:textColor="#9499A3"
-                    android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btnConnectDevice"
-                    android:layout_width="match_parent"
-                    android:layout_height="48dp"
-                    android:layout_marginTop="20dp"
-                    android:backgroundTint="#C8A66A"
-                    android:text="@string/btn_connect_device"
-                    android:textColor="#08090B"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <!-- Security Assurance Highlights -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:background="#101216"
-                android:orientation="vertical"
-                android:padding="16dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Cryptographic Guarantees"
-                    android:textColor="#C8A66A"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:lineSpacingExtra="2dp"
-                    android:text="• Hardware Keystore: Private ECDSA P-256 keys remain inside Android Keystore.\n• Plane-2 Isolation: Telemetry signed with asymmetric proofs-of-possession.\n• Zero Covert Monitoring: No SMS, photos, microphone, or keylogging."
-                    android:textColor="#9499A3"
-                    android:textSize="12sp" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- STATE B: ENROLLED COMPANION DASHBOARD -->
-        <LinearLayout
-            android:id="@+id/layoutDashboard"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:orientation="vertical"
-            android:visibility="gone">
-
-            <!-- Device Identity Card -->
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:background="#101216"
-                android:orientation="vertical"
-                android:padding="18dp">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="DEVICE IDENTITY"
-                    android:textColor="#646A74"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/txtDeviceModel"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Android Device"
-                    android:textColor="#F4F1EA"
-                    android:textSize="16sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/txtKeystoreTrust"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Hardware Keystore (TEE)"
-                    android:textColor="#75B798"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/txtFingerprint"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:background="#08090B"
-                    android:padding="8dp"
-                    android:textColor="#C8A66A"
-                    android:textIsSelectable="true"
+                    android:background="@drawable/bg_badge_neutral"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="5dp"
+                    android:text="@string/status_not_enrolled"
+                    android:textColor="@color/vajra_text_secondary"
                     android:textSize="11sp"
-                    android:typeface="monospace" />
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/txtSyncSource"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:gravity="end"
+                    android:text="Ready to pair"
+                    android:textColor="@color/vajra_text_muted"
+                    android:textSize="11sp" />
             </LinearLayout>
 
-            <!-- Mesh Status & Capabilities -->
+            <!-- STATE A: ONBOARDING / NOT ENROLLED -->
             <LinearLayout
+                android:id="@+id/layoutOnboarding"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="14dp"
-                android:background="#101216"
                 android:orientation="vertical"
-                android:padding="18dp">
+                android:visibility="visible">
 
-                <TextView
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="TELEMETRY &amp; CAPABILITIES"
-                    android:textColor="#646A74"
-                    android:textSize="10sp"
-                    android:textStyle="bold" />
+                    android:background="@drawable/bg_card_gold_accent"
+                    android:orientation="vertical"
+                    android:padding="20dp">
 
-                <TextView
-                    android:id="@+id/txtServerUrl"
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ENDPOINT SECURITY AGENT"
+                        android:textColor="@color/vajra_gold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Zero-Trust Endpoint Protection"
+                        android:textColor="@color/vajra_text_primary"
+                        android:textSize="19sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:lineSpacingExtra="3dp"
+                        android:text="@string/onboarding_hero_desc"
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnConnectDevice"
+                        style="@style/Widget.Vajra.Button.Primary"
+                        android:layout_marginTop="20dp"
+                        android:text="@string/btn_connect_device"
+                        app:icon="@drawable/ic_qr_scan" />
+                </LinearLayout>
+
+                <!-- Cryptographic Guarantees Card -->
+                <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="6dp"
-                    android:textColor="#9499A3"
-                    android:textSize="12sp" />
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card_surface"
+                    android:orientation="vertical"
+                    android:padding="18dp">
 
-                <TextView
-                    android:id="@+id/txtHeartbeatStatus"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:textColor="#9499A3"
-                    android:textSize="12sp" />
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="CRYPTOGRAPHIC GUARANTEES" />
 
-                <TextView
-                    android:id="@+id/txtAuthorizedCommands"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="Authorized Commands: Device Status (REQUEST_DEVICE_STATUS), Ring Alarm (RING_DEVICE)"
-                    android:textColor="#C8A66A"
-                    android:textSize="11sp" />
+                    <!-- Row 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="top"
+                        android:orientation="horizontal">
 
-                <TextView
-                    android:id="@+id/txtDeferredCommands"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:text="Deferred / Not Supported on Companion: GPS Location, Remote Lock, Remote Wipe"
-                    android:textColor="#646A74"
-                    android:textSize="10sp" />
+                        <FrameLayout
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_icon_badge_gold">
+
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_key_hardware"
+                                app:tint="@color/vajra_gold" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Hardware Keystore Identity"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:lineSpacingExtra="2dp"
+                                android:text="Private ECDSA P-256 keys are generated and sealed inside Android Keystore (StrongBox / TEE)."
+                                android:textColor="@color/vajra_text_secondary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Row 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="top"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_icon_badge_jade">
+
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_pulse_heartbeat"
+                                app:tint="@color/vajra_jade" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Plane-2 Signed Telemetry"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:lineSpacingExtra="2dp"
+                                android:text="Heartbeats and recovery commands use per-request timestamp and nonce replay protection."
+                                android:textColor="@color/vajra_text_secondary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Row 3 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:gravity="top"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:layout_width="34dp"
+                            android:layout_height="34dp"
+                            android:background="@drawable/bg_icon_badge_neutral">
+
+                            <ImageView
+                                android:layout_width="18dp"
+                                android:layout_height="18dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_shield_check"
+                                app:tint="@color/vajra_text_secondary" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="Zero Covert Monitoring"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+
+                            <TextView
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:lineSpacingExtra="2dp"
+                                android:text="No SMS, contacts, photos, microphone capture, or continuous background GPS tracking."
+                                android:textColor="@color/vajra_text_secondary"
+                                android:textSize="12sp" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
             </LinearLayout>
 
-            <!-- Action Controls -->
-            <Button
-                android:id="@+id/btnResumePendingApproval"
+            <!-- STATE B: ENROLLED / PENDING / REVOKED COMPANION DASHBOARD -->
+            <LinearLayout
+                android:id="@+id/layoutDashboard"
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="#C8A66A"
-                android:text="Resume Owner Approval Check"
-                android:textColor="#08090B"
-                android:textStyle="bold"
-                android:visibility="gone" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="vertical"
+                android:visibility="gone">
 
-            <Button
-                android:id="@+id/btnRefreshStatus"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="#161B22"
-                android:text="Refresh Telemetry"
-                android:textColor="#F4F1EA" />
+                <!-- Pending Owner Approval Resume Card -->
+                <LinearLayout
+                    android:id="@+id/cardPendingApproval"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="14dp"
+                    android:background="@drawable/bg_card_gold_accent"
+                    android:orientation="vertical"
+                    android:padding="18dp"
+                    android:visibility="gone">
 
-            <Button
-                android:id="@+id/btnDisconnect"
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ENROLLMENT PENDING"
+                        android:textColor="@color/vajra_gold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Awaiting Owner Approval on Console"
+                        android:textColor="@color/vajra_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="This device submitted its Keystore public key. Open the approval screen to poll or verify your fingerprint in the VAJRA web console."
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnResumePendingApproval"
+                        style="@style/Widget.Vajra.Button.Primary"
+                        android:layout_marginTop="14dp"
+                        android:text="Resume Owner Approval Check" />
+                </LinearLayout>
+
+                <!-- 1. Security Overview Card -->
+                <LinearLayout
+                    android:id="@+id/cardSecurityOverview"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/bg_card_jade_accent"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <FrameLayout
+                            android:id="@+id/iconContainerOverview"
+                            android:layout_width="42dp"
+                            android:layout_height="42dp"
+                            android:background="@drawable/bg_icon_badge_jade">
+
+                            <ImageView
+                                android:id="@+id/imgOverviewShield"
+                                android:layout_width="22dp"
+                                android:layout_height="22dp"
+                                android:layout_gravity="center"
+                                android:src="@drawable/ic_shield_check"
+                                app:tint="@color/vajra_jade" />
+                        </FrameLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="12dp"
+                            android:layout_weight="1"
+                            android:orientation="vertical">
+
+                            <TextView
+                                style="@style/TextAppearance.Vajra.Overline"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="SECURITY OVERVIEW" />
+
+                            <TextView
+                                android:id="@+id/txtOverviewHeadline"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="2dp"
+                                android:text="Device Protected &amp; Verified"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="16sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtOverviewSubtext"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="ECDSA P-256 identity active. Background heartbeat and command checks scheduled."
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnRefreshStatus"
+                            style="@style/Widget.Vajra.Button.Secondary"
+                            android:layout_width="0dp"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_refresh_telemetry" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnSendHeartbeat"
+                            style="@style/Widget.Vajra.Button.Primary"
+                            android:layout_width="0dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/btn_send_heartbeat" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 2. Connection & Heartbeat Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card_surface"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="CONNECTION &amp; HEARTBEAT" />
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.FieldLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Configured Mesh Server" />
+
+                    <TextView
+                        android:id="@+id/txtServerUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="@color/vajra_text_primary"
+                        android:textIsSelectable="true"
+                        android:textSize="12sp"
+                        android:typeface="monospace" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/vajra_border_subtle" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Vajra.FieldLabel"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Signed Heartbeat Status" />
+
+                        <TextView
+                            android:id="@+id/badgeHeartbeatFreshness"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_badge_neutral"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp"
+                            android:text="NO CHECK-IN"
+                            android:textColor="@color/vajra_text_secondary"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtHeartbeatStatus"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textSize="12sp" />
+
+                    <TextView
+                        android:id="@+id/txtCommandPollTime"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Last command check: Not polled yet"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 3. Battery & Device Telemetry Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card_surface"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <ImageView
+                            android:layout_width="16dp"
+                            android:layout_height="16dp"
+                            android:src="@drawable/ic_battery"
+                            app:tint="@color/vajra_gold" />
+
+                        <TextView
+                            style="@style/TextAppearance.Vajra.Overline"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:text="BATTERY &amp; DEVICE TELEMETRY" />
+                    </LinearLayout>
+
+                    <!-- Grid Row 1 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_well_code"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                style="@style/TextAppearance.Vajra.Overline"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="BATTERY" />
+
+                            <TextView
+                                android:id="@+id/txtTelemetryBattery"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Unavailable"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_well_code"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                style="@style/TextAppearance.Vajra.Overline"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="RING ALERTS" />
+
+                            <TextView
+                                android:id="@+id/txtTelemetryAlerts"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:text="Checking…"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="13sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+                    </LinearLayout>
+
+                    <!-- Grid Row 2 -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:orientation="horizontal">
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_well_code"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                style="@style/TextAppearance.Vajra.Overline"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="ANDROID OS" />
+
+                            <TextView
+                                android:id="@+id/txtTelemetryOs"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_well_code"
+                            android:orientation="vertical"
+                            android:padding="12dp">
+
+                            <TextView
+                                style="@style/TextAppearance.Vajra.Overline"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:text="AGENT BUILD" />
+
+                            <TextView
+                                android:id="@+id/txtTelemetryAgent"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:layout_marginTop="4dp"
+                                android:textColor="@color/vajra_text_primary"
+                                android:textSize="12sp"
+                                android:textStyle="bold"
+                                android:typeface="monospace" />
+                        </LinearLayout>
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 4. Device Identity & Key Protection Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card_surface"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="DEVICE IDENTITY &amp; KEY PROTECTION" />
+
+                    <TextView
+                        android:id="@+id/txtDeviceModel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:text="Android Device"
+                        android:textColor="@color/vajra_text_primary"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtKeystoreTrust"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="Hardware Keystore (TEE)"
+                        android:textColor="@color/vajra_jade"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtDeviceId"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textIsSelectable="true"
+                        android:textSize="11sp"
+                        android:typeface="monospace" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_well_code"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <LinearLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <TextView
+                                style="@style/TextAppearance.Vajra.Overline"
+                                android:layout_width="0dp"
+                                android:layout_height="wrap_content"
+                                android:layout_weight="1"
+                                android:text="SHA-256 KEY FINGERPRINT" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btnCopyFingerprint"
+                                style="@style/Widget.Vajra.Button.Compact"
+                                android:layout_width="wrap_content"
+                                android:text="Copy"
+                                app:icon="@drawable/ic_copy" />
+                        </LinearLayout>
+
+                        <TextView
+                            android:id="@+id/txtFingerprint"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:lineSpacingExtra="2dp"
+                            android:textColor="@color/vajra_gold"
+                            android:textIsSelectable="true"
+                            android:textSize="11sp"
+                            android:typeface="monospace" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <!-- 5. Device Commands & Execution Lifecycle Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card_surface"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="DEVICE COMMANDS" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="Test local ring alerts, silence an active alarm, or request an immediate signed console status &amp; command sync."
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textSize="12sp" />
+
+                    <!-- Active Alarm Alert Banner -->
+                    <LinearLayout
+                        android:id="@+id/layoutActiveRingBanner"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:background="@drawable/bg_card_error"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal"
+                        android:padding="12dp"
+                        android:visibility="gone">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:src="@drawable/ic_bell_ring"
+                            app:tint="@color/vajra_crimson" />
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_marginStart="10dp"
+                            android:layout_weight="1"
+                            android:text="Find My Device alarm is actively ringing."
+                            android:textColor="@color/vajra_crimson"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+
+                    <!-- Ring & Stop Ring Side-by-Side -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:orientation="horizontal">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCmdRingDevice"
+                            style="@style/Widget.Vajra.Button.Secondary"
+                            android:layout_width="0dp"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/cmd_ring_device"
+                            app:icon="@drawable/ic_bell_ring" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCmdStopRing"
+                            style="@style/Widget.Vajra.Button.Danger"
+                            android:layout_width="0dp"
+                            android:layout_marginStart="6dp"
+                            android:layout_weight="1"
+                            android:text="@string/cmd_stop_ring"
+                            app:icon="@drawable/ic_stop_ring" />
+                    </LinearLayout>
+
+                    <!-- Request Device Status -->
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnCmdRequestStatus"
+                        style="@style/Widget.Vajra.Button.Primary"
+                        android:layout_marginTop="10dp"
+                        android:text="@string/cmd_request_status"
+                        app:icon="@drawable/ic_pulse_heartbeat" />
+
+                    <!-- Command Lifecycle & Execution Results -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:background="@drawable/bg_well_code"
+                        android:orientation="vertical"
+                        android:padding="12dp">
+
+                        <TextView
+                            style="@style/TextAppearance.Vajra.Overline"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="COMMAND LIFECYCLE &amp; EXECUTION RESULTS" />
+
+                        <TextView
+                            android:id="@+id/txtCommandLifecycleStatus"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:lineSpacingExtra="2dp"
+                            android:text="No command executed in this session."
+                            android:textColor="@color/vajra_text_secondary"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtAuthorizedCommands"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Supported Actions: Device Status (REQUEST_DEVICE_STATUS), Ring Alarm (RING_DEVICE)"
+                        android:textColor="@color/vajra_gold"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/txtDeferredCommands"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:text="Unsupported on Companion: GPS Location, Remote Lock, Remote Wipe"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="11sp" />
+                </LinearLayout>
+
+                <!-- 6. Recent Security Activity Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card_surface"
+                    android:orientation="vertical"
+                    android:padding="18dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Vajra.Overline"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="RECENT SECURITY ACTIVITY" />
+
+                        <TextView
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Local device ledger"
+                            android:textColor="@color/vajra_text_muted"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtActivityEmpty"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:text="No local security events recorded yet. Events appear after pairing, signed heartbeats, or command execution."
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="12sp" />
+
+                    <LinearLayout
+                        android:id="@+id/layoutActivityList"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:orientation="vertical"
+                        android:visibility="gone" />
+                </LinearLayout>
+
+                <!-- Disconnect / Unpair Action -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDisconnect"
+                    style="@style/Widget.Vajra.Button.Danger"
+                    android:layout_marginTop="16dp"
+                    android:text="Disconnect / Unpair Device" />
+            </LinearLayout>
+
+            <!-- Global Footer Links -->
+            <LinearLayout
                 android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="10dp"
-                android:backgroundTint="#211214"
-                android:text="Disconnect / Unpair Device"
-                android:textColor="#F85149" />
+                android:layout_height="wrap_content"
+                android:layout_marginTop="20dp"
+                android:gravity="center"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/btnPrivacyLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:minHeight="40dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp"
+                    android:text="Privacy Disclosure"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="12sp" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="·"
+                    android:textColor="@color/vajra_text_muted" />
+
+                <TextView
+                    android:id="@+id/btnSettingsLink"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="?attr/selectableItemBackground"
+                    android:minHeight="40dp"
+                    android:paddingHorizontal="12dp"
+                    android:paddingVertical="10dp"
+                    android:text="Settings"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
         </LinearLayout>
-
-        <!-- Global Footer Links -->
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="20dp"
-            android:gravity="center"
-            android:orientation="horizontal">
-
-            <TextView
-                android:id="@+id/btnPrivacyLink"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:text="Privacy Disclosure"
-                android:textColor="#9499A3"
-                android:textSize="12sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text=" · "
-                android:textColor="#646A74" />
-
-            <TextView
-                android:id="@+id/btnSettingsLink"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:padding="8dp"
-                android:text="Settings"
-                android:textColor="#9499A3"
-                android:textSize="12sp" />
-        </LinearLayout>
-
-    </LinearLayout>
-</ScrollView>
+    </ScrollView>
+</LinearLayout>

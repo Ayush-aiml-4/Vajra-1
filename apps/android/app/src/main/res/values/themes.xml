@@ -1,10 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.VajraCompanion" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <item name="colorPrimary">#C79A5A</item>
-        <item name="colorPrimaryVariant">#8B6914</item>
-        <item name="colorOnPrimary">#12141A</item>
-        <item name="android:statusBarColor">#12141A</item>
-        <item name="android:navigationBarColor">#12141A</item>
+    <style name="Theme.VajraCompanion" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/vajra_gold</item>
+        <item name="colorPrimaryVariant">@color/vajra_gold_muted</item>
+        <item name="colorOnPrimary">@color/vajra_text_on_accent</item>
+        <item name="colorSecondary">@color/vajra_jade</item>
+        <item name="colorOnSecondary">@color/vajra_text_on_accent</item>
+        <item name="colorSurface">@color/vajra_surface_card</item>
+        <item name="colorOnSurface">@color/vajra_text_primary</item>
+        <item name="android:colorBackground">@color/vajra_bg_obsidian</item>
+        <item name="android:windowBackground">@color/vajra_bg_obsidian</item>
+        <item name="android:statusBarColor">@color/vajra_bg_obsidian</item>
+        <item name="android:navigationBarColor">@color/vajra_bg_obsidian</item>
+        <item name="android:textColorPrimary">@color/vajra_text_primary</item>
+        <item name="android:textColorSecondary">@color/vajra_text_secondary</item>
+        <item name="alertDialogTheme">@style/ThemeOverlay.Vajra.AlertDialog</item>
+    </style>
+
+    <style name="ThemeOverlay.Vajra.AlertDialog" parent="ThemeOverlay.MaterialComponents.Dark.ActionBar">
+        <item name="colorSurface">@color/vajra_surface_card</item>
+        <item name="android:background">@color/vajra_surface_card</item>
+        <item name="colorPrimary">@color/vajra_gold</item>
+        <item name="android:textColorPrimary">@color/vajra_text_primary</item>
+        <item name="android:textColorSecondary">@color/vajra_text_secondary</item>
     </style>
 </resources>

@@ -1,472 +1,1059 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#08090B"
-    android:fillViewport="true">
+    android:background="@color/vajra_bg_obsidian"
+    android:orientation="vertical">
 
+    <!-- Custom Top App Bar -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="24dp">
+        android:gravity="center_vertical"
+        android:minHeight="60dp"
+        android:orientation="horizontal"
+        android:paddingHorizontal="12dp"
+        android:paddingVertical="10dp">
 
-        <!-- Header -->
-        <TextView
-            android:id="@+id/txtHeaderTitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/onboarding_title"
-            android:textColor="#F4F1EA"
-            android:textSize="22sp"
-            android:textStyle="bold" />
+        <ImageButton
+            android:id="@+id/btnEnrollBack"
+            android:layout_width="42dp"
+            android:layout_height="42dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:padding="9dp"
+            android:scaleType="centerInside"
+            android:src="@drawable/ic_back" />
 
-        <TextView
-            android:id="@+id/txtHeaderSubtitle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
-            android:text="Fast, zero-trust onboarding with hardware-backed keys"
-            android:textColor="#9499A3"
-            android:textSize="13sp" />
-
-        <!-- Stepper Indicator -->
         <LinearLayout
-            android:id="@+id/layoutStepper"
-            android:layout_width="match_parent"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:orientation="horizontal"
-            android:weightSum="4">
+            android:layout_marginStart="6dp"
+            android:layout_weight="1"
+            android:orientation="vertical">
 
             <TextView
-                android:id="@+id/stepTab1"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="1. Scan"
-                android:textColor="#C8A66A"
-                android:textSize="11sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/stepTab2"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="2. Verify"
-                android:textColor="#646A74"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/stepTab3"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="3. Approve"
-                android:textColor="#646A74"
-                android:textSize="11sp" />
-
-            <TextView
-                android:id="@+id/stepTab4"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:gravity="center"
-                android:text="4. Connected"
-                android:textColor="#646A74"
-                android:textSize="11sp" />
-        </LinearLayout>
-
-        <!-- STEP 1: SCAN -->
-        <LinearLayout
-            android:id="@+id/layoutStepScan"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="#101216"
-            android:orientation="vertical"
-            android:padding="20dp">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/step_scan_title"
-                android:textColor="#F4F1EA"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="3dp"
-                android:text="@string/step_scan_desc"
-                android:textColor="#9499A3"
-                android:textSize="13sp" />
-
-            <!-- Live Camera Viewfinder (In-App Scanning) -->
-            <RelativeLayout
-                android:id="@+id/layoutCameraContainer"
-                android:layout_width="match_parent"
-                android:layout_height="260dp"
-                android:layout_marginTop="16dp"
-                android:background="#000000"
-                android:visibility="gone">
-
-                <TextureView
-                    android:id="@+id/viewfinderTexture"
-                    android:layout_width="match_parent"
-                    android:layout_height="match_parent" />
-
-                <!-- Targeting Reticle Overlay -->
-                <View
-                    android:id="@+id/viewfinderReticle"
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
-                    android:layout_centerInParent="true"
-                    android:background="@drawable/ic_vajra"
-                    android:alpha="0.2" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_alignParentBottom="true"
-                    android:layout_centerHorizontal="true"
-                    android:layout_marginBottom="12dp"
-                    android:background="#9908090B"
-                    android:paddingHorizontal="12dp"
-                    android:paddingVertical="4dp"
-                    android:text="Align QR Code inside frame"
-                    android:textColor="#C8A66A"
-                    android:textSize="11sp" />
-            </RelativeLayout>
-
-            <!-- Camera Permission Denied Card -->
-            <LinearLayout
-                android:id="@+id/layoutCameraDenied"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:background="#211214"
-                android:orientation="vertical"
-                android:padding="14dp"
-                android:visibility="gone">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Camera Permission Required"
-                    android:textColor="#F85149"
-                    android:textSize="13sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="4dp"
-                    android:lineSpacingExtra="2dp"
-                    android:text="@string/camera_denied_desc"
-                    android:textColor="#9499A3"
-                    android:textSize="12sp" />
-
-                <Button
-                    android:id="@+id/btnRetryCamera"
-                    android:layout_width="match_parent"
-                    android:layout_height="40dp"
-                    android:layout_marginTop="10dp"
-                    android:backgroundTint="#C8A66A"
-                    android:text="@string/btn_retry_camera"
-                    android:textColor="#08090B"
-                    android:textSize="12sp"
-                    android:textStyle="bold" />
-            </LinearLayout>
-
-            <Button
-                android:id="@+id/btnScanQr"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="18dp"
-                android:backgroundTint="#C8A66A"
-                android:text="@string/btn_scan_qr"
-                android:textColor="#08090B"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/btnPasteBundle"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="10dp"
-                android:backgroundTint="#161B22"
-                android:text="@string/paste_pairing_bundle"
-                android:textColor="#F4F1EA" />
-
-            <TextView
-                android:id="@+id/btnToggleManual"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center"
-                android:text="@string/toggle_manual_entry"
-                android:textColor="#C8A66A"
-                android:textSize="12sp" />
-
-            <!-- Collapsible Manual Input Container -->
-            <LinearLayout
-                android:id="@+id/layoutManualFields"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:orientation="vertical"
-                android:visibility="gone">
-
-                <EditText
-                    android:id="@+id/inputServerUrl"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Server URL (e.g. http://10.0.2.2:3000)"
-                    android:inputType="textUri"
-                    android:textColor="#F4F1EA"
-                    android:textColorHint="#646A74"
-                    android:textSize="13sp" />
-
-                <EditText
-                    android:id="@+id/inputToken"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Enrollment token (VJR-...)"
-                    android:inputType="textVisiblePassword"
-                    android:textColor="#F4F1EA"
-                    android:textColorHint="#646A74"
-                    android:textSize="13sp" />
-
-                <EditText
-                    android:id="@+id/inputDeviceId"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Device ID (UUID)"
-                    android:inputType="text"
-                    android:textColor="#F4F1EA"
-                    android:textColorHint="#646A74"
-                    android:textSize="13sp" />
-
-                <EditText
-                    android:id="@+id/inputChallenge"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:hint="Challenge nonce"
-                    android:inputType="textVisiblePassword"
-                    android:textColor="#F4F1EA"
-                    android:textColorHint="#646A74"
-                    android:textSize="13sp" />
-
-                <Button
-                    android:id="@+id/btnManualContinue"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:backgroundTint="#C8A66A"
-                    android:text="Continue with details"
-                    android:textColor="#08090B" />
-            </LinearLayout>
-        </LinearLayout>
-
-        <!-- STEP 2: VERIFY PASSCODE -->
-        <LinearLayout
-            android:id="@+id/layoutStepPasscode"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="#101216"
-            android:orientation="vertical"
-            android:padding="20dp"
-            android:visibility="gone">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="@string/step_passcode_title"
-                android:textColor="#F4F1EA"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:lineSpacingExtra="3dp"
-                android:text="@string/step_passcode_desc"
-                android:textColor="#9499A3"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/txtScannedTarget"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:textColor="#C8A66A"
-                android:textSize="12sp" />
-
-            <EditText
-                android:id="@+id/inputPasscode"
-                android:layout_width="match_parent"
-                android:layout_height="56dp"
-                android:layout_marginTop="16dp"
-                android:background="#161B22"
-                android:gravity="center"
-                android:hint="• • •   • • •"
-                android:inputType="number"
-                android:maxLength="7"
-                android:textColor="#F4F1EA"
-                android:textColorHint="#646A74"
-                android:textSize="26sp"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/btnSubmitEnroll"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="20dp"
-                android:backgroundTint="#C8A66A"
-                android:text="@string/btn_verify_connect"
-                android:textColor="#08090B"
-                android:textStyle="bold" />
-        </LinearLayout>
-
-        <!-- STEP 3: AWAITING APPROVAL -->
-        <LinearLayout
-            android:id="@+id/layoutStepAwaitingApproval"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="#101216"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="24dp"
-            android:visibility="gone">
-
-            <ProgressBar
-                android:id="@+id/progressAwaiting"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:indeterminateTint="#C8A66A" />
-
-            <TextView
-                android:id="@+id/txtAwaitingTitle"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="16dp"
-                android:gravity="center"
-                android:text="@string/step_awaiting_title"
-                android:textColor="#F4F1EA"
-                android:textSize="16sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/txtAwaitingDesc"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:lineSpacingExtra="3dp"
-                android:text="@string/step_awaiting_desc"
-                android:textColor="#9499A3"
-                android:textSize="13sp" />
-
-            <TextView
-                android:id="@+id/txtFingerprintSummary"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="14dp"
-                android:gravity="center"
-                android:textColor="#75B798"
-                android:textSize="11sp" />
-
-            <Button
-                android:id="@+id/btnCheckStatusNow"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="16dp"
-                android:backgroundTint="#C8A66A"
-                android:text="@string/btn_check_status_now"
-                android:textColor="#08090B"
-                android:textStyle="bold" />
-
-            <Button
-                android:id="@+id/btnRestartPairing"
-                android:layout_width="match_parent"
-                android:layout_height="44dp"
-                android:layout_marginTop="10dp"
-                android:backgroundTint="#25282E"
-                android:text="@string/btn_cancel_restart_pairing"
-                android:textColor="#F4F1EA"
-                android:visibility="visible" />
-        </LinearLayout>
-
-        <!-- STEP 4: CONNECTED -->
-        <LinearLayout
-            android:id="@+id/layoutStepConnected"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:background="#101216"
-            android:gravity="center"
-            android:orientation="vertical"
-            android:padding="24dp"
-            android:visibility="gone">
-
-            <TextView
+                android:id="@+id/txtHeaderTitle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="✓"
-                android:textColor="#75B798"
-                android:textSize="36sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:gravity="center"
-                android:text="@string/step_connected_title"
-                android:textColor="#F4F1EA"
+                android:text="@string/onboarding_title"
+                android:textColor="@color/vajra_text_primary"
                 android:textSize="18sp"
                 android:textStyle="bold" />
 
             <TextView
-                android:layout_width="match_parent"
+                android:id="@+id/txtHeaderSubtitle"
+                android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
-                android:gravity="center"
-                android:lineSpacingExtra="3dp"
-                android:text="@string/step_connected_desc"
-                android:textColor="#9499A3"
-                android:textSize="13sp" />
-
-            <Button
-                android:id="@+id/btnDone"
-                android:layout_width="match_parent"
-                android:layout_height="48dp"
-                android:layout_marginTop="24dp"
-                android:backgroundTint="#75B798"
-                android:text="@string/btn_done"
-                android:textColor="#08090B"
-                android:textStyle="bold" />
+                android:text="@string/onboarding_subtitle"
+                android:textColor="@color/vajra_text_secondary"
+                android:textSize="11sp" />
         </LinearLayout>
 
-        <!-- Status / Error Feedback -->
         <TextView
-            android:id="@+id/txtEnrollResult"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_badge_neutral"
+            android:paddingHorizontal="8dp"
+            android:paddingVertical="4dp"
+            android:text="ENROLL V1"
+            android:textColor="@color/vajra_text_secondary"
+            android:textSize="10sp"
+            android:textStyle="bold"
+            android:typeface="monospace" />
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="@color/vajra_border_subtle" />
+
+    <ScrollView
+        android:id="@+id/scrollEnrollment"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:clipToPadding="false"
+        android:fillViewport="true">
+
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="18dp"
-            android:lineSpacingExtra="2dp"
-            android:textColor="#F85149"
-            android:textIsSelectable="true"
-            android:textSize="12sp" />
+            android:orientation="vertical"
+            android:paddingHorizontal="16dp"
+            android:paddingTop="16dp"
+            android:paddingBottom="32dp">
 
-    </LinearLayout>
-</ScrollView>
+            <!-- 4-Step Progress Indicator Card -->
+            <LinearLayout
+                android:id="@+id/layoutStepper"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_card_surface"
+                android:orientation="vertical"
+                android:paddingHorizontal="14dp"
+                android:paddingVertical="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/stepNode1"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_step_node_active"
+                        android:gravity="center"
+                        android:text="1"
+                        android:textColor="@color/vajra_text_on_accent"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:id="@+id/stepConnector12"
+                        android:layout_width="0dp"
+                        android:layout_height="2dp"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@color/vajra_border_subtle" />
+
+                    <TextView
+                        android:id="@+id/stepNode2"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_step_node_inactive"
+                        android:gravity="center"
+                        android:text="2"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:id="@+id/stepConnector23"
+                        android:layout_width="0dp"
+                        android:layout_height="2dp"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@color/vajra_border_subtle" />
+
+                    <TextView
+                        android:id="@+id/stepNode3"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_step_node_inactive"
+                        android:gravity="center"
+                        android:text="3"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <View
+                        android:id="@+id/stepConnector34"
+                        android:layout_width="0dp"
+                        android:layout_height="2dp"
+                        android:layout_marginHorizontal="6dp"
+                        android:layout_weight="1"
+                        android:background="@color/vajra_border_subtle" />
+
+                    <TextView
+                        android:id="@+id/stepNode4"
+                        android:layout_width="26dp"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_step_node_inactive"
+                        android:gravity="center"
+                        android:text="4"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:orientation="horizontal"
+                    android:weightSum="4">
+
+                    <TextView
+                        android:id="@+id/stepTab1"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="start"
+                        android:text="Scan"
+                        android:textColor="@color/vajra_gold"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/stepTab2"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Verify"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/stepTab3"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="center"
+                        android:text="Approve"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/stepTab4"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:gravity="end"
+                        android:text="Protected"
+                        android:textColor="@color/vajra_text_muted"
+                        android:textSize="11sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- STEP 1: SCAN OR IMPORT PAIRING BUNDLE -->
+            <LinearLayout
+                android:id="@+id/layoutStepScan"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card_surface"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_icon_badge_gold">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_qr_scan"
+                            app:tint="@color/vajra_gold" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/step_scan_title"
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Step 1 of 4 · Establish pairing channel"
+                            android:textColor="@color/vajra_gold"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/step_scan_desc"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="13sp" />
+
+                <!-- Live Camera Viewfinder (In-App Scanning) -->
+                <RelativeLayout
+                    android:id="@+id/layoutCameraContainer"
+                    android:layout_width="match_parent"
+                    android:layout_height="250dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@color/vajra_bg_obsidian"
+                    android:visibility="gone">
+
+                    <TextureView
+                        android:id="@+id/viewfinderTexture"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent" />
+
+                    <View
+                        android:id="@+id/viewfinderReticle"
+                        android:layout_width="184dp"
+                        android:layout_height="184dp"
+                        android:layout_centerInParent="true"
+                        android:background="@drawable/bg_scan_reticle" />
+
+                    <TextView
+                        android:id="@+id/btnCloseScanner"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentTop="true"
+                        android:layout_alignParentEnd="true"
+                        android:layout_margin="10dp"
+                        android:background="@drawable/bg_badge_neutral"
+                        android:paddingHorizontal="10dp"
+                        android:paddingVertical="6dp"
+                        android:text="@string/btn_close_scanner"
+                        android:textColor="@color/vajra_text_primary"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_alignParentBottom="true"
+                        android:layout_centerHorizontal="true"
+                        android:layout_marginBottom="12dp"
+                        android:background="#CC08090B"
+                        android:paddingHorizontal="12dp"
+                        android:paddingVertical="5dp"
+                        android:text="Align VAJRA console QR code inside brackets"
+                        android:textColor="@color/vajra_gold"
+                        android:textSize="11sp"
+                        android:textStyle="bold" />
+                </RelativeLayout>
+
+                <!-- Camera Permission Denied Card -->
+                <LinearLayout
+                    android:id="@+id/layoutCameraDenied"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_card_error"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/camera_denied_title"
+                        android:textColor="@color/vajra_crimson"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:lineSpacingExtra="2dp"
+                        android:text="@string/camera_denied_desc"
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textSize="12sp" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnRetryCamera"
+                        style="@style/Widget.Vajra.Button.Primary"
+                        android:layout_marginTop="12dp"
+                        android:text="@string/btn_retry_camera" />
+                </LinearLayout>
+
+                <!-- Primary QR Scan Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnScanQr"
+                    style="@style/Widget.Vajra.Button.Primary"
+                    android:layout_marginTop="18dp"
+                    android:text="@string/btn_scan_qr"
+                    app:icon="@drawable/ic_qr_scan" />
+
+                <!-- Secondary Paste Pairing Bundle Button (Zero-inset, non-clipping) -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnPasteBundle"
+                    style="@style/Widget.Vajra.Button.Secondary"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/paste_pairing_bundle"
+                    app:icon="@drawable/ic_paste" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:text="Supports VAJRA_ENROLL_V1 QR payloads and clipboard JSON bundles"
+                    android:textColor="@color/vajra_text_muted"
+                    android:textSize="11sp" />
+
+                <!-- Divider -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@color/vajra_border_subtle" />
+
+                <!-- Manual Pairing Toggle Row -->
+                <TextView
+                    android:id="@+id/btnToggleManual"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:minHeight="44dp"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="10dp"
+                    android:text="@string/toggle_manual_entry"
+                    android:textColor="@color/vajra_gold"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <!-- Collapsible Manual Input Container -->
+                <LinearLayout
+                    android:id="@+id/layoutManualFields"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="@drawable/bg_well_code"
+                    android:orientation="vertical"
+                    android:padding="14dp"
+                    android:visibility="gone">
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.FieldLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Server Origin (HTTPS)" />
+
+                    <EditText
+                        android:id="@+id/inputServerUrl"
+                        style="@style/Widget.Vajra.EditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:hint="https://your-vajra-host.example"
+                        android:imeOptions="actionNext"
+                        android:inputType="textUri"
+                        android:singleLine="true" />
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.FieldLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Enrollment Token" />
+
+                    <EditText
+                        android:id="@+id/inputToken"
+                        style="@style/Widget.Vajra.EditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:hint="VJR-..."
+                        android:imeOptions="actionNext"
+                        android:inputType="textVisiblePassword"
+                        android:singleLine="true"
+                        android:typeface="monospace" />
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.FieldLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Device ID (UUID)" />
+
+                    <EditText
+                        android:id="@+id/inputDeviceId"
+                        style="@style/Widget.Vajra.EditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:hint="00000000-0000-0000-0000-000000000000"
+                        android:imeOptions="actionNext"
+                        android:inputType="text"
+                        android:singleLine="true"
+                        android:typeface="monospace" />
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.FieldLabel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:text="Challenge Nonce" />
+
+                    <EditText
+                        android:id="@+id/inputChallenge"
+                        style="@style/Widget.Vajra.EditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:hint="Challenge nonce from console"
+                        android:imeOptions="actionDone"
+                        android:inputType="textVisiblePassword"
+                        android:singleLine="true"
+                        android:typeface="monospace" />
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/btnManualContinue"
+                        style="@style/Widget.Vajra.Button.Primary"
+                        android:layout_marginTop="16dp"
+                        android:text="@string/btn_manual_continue" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <!-- STEP 2: 6-DIGIT VERIFICATION CODE -->
+            <LinearLayout
+                android:id="@+id/layoutStepPasscode"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card_surface"
+                android:orientation="vertical"
+                android:padding="18dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_icon_badge_gold">
+
+                        <ImageView
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_lock_pin"
+                            app:tint="@color/vajra_gold" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/step_passcode_title"
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="16sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:text="Step 2 of 4 · Proof-of-possession signing"
+                            android:textColor="@color/vajra_gold"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/step_passcode_desc"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="13sp" />
+
+                <!-- Target Server & Device Summary Well -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_well_code"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="PAIRING TARGET" />
+
+                    <TextView
+                        android:id="@+id/txtScannedTarget"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="4dp"
+                        android:lineSpacingExtra="2dp"
+                        android:textColor="@color/vajra_gold"
+                        android:textIsSelectable="true"
+                        android:textSize="12sp"
+                        android:typeface="monospace" />
+                </LinearLayout>
+
+                <!-- 6-Digit Segmented Passcode Entry -->
+                <TextView
+                    style="@style/TextAppearance.Vajra.FieldLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="18dp"
+                    android:text="Verification Passcode" />
+
+                <FrameLayout
+                    android:id="@+id/layoutPasscodeBoxes"
+                    android:layout_width="match_parent"
+                    android:layout_height="58dp"
+                    android:layout_marginTop="8dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/passcodeSlot0"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_passcode_cell_active"
+                            android:gravity="center"
+                            android:text=""
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:typeface="monospace" />
+
+                        <TextView
+                            android:id="@+id/passcodeSlot1"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_passcode_cell_empty"
+                            android:gravity="center"
+                            android:text=""
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:typeface="monospace" />
+
+                        <TextView
+                            android:id="@+id/passcodeSlot2"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="12dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_passcode_cell_empty"
+                            android:gravity="center"
+                            android:text=""
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:typeface="monospace" />
+
+                        <TextView
+                            android:id="@+id/passcodeSlot3"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_passcode_cell_empty"
+                            android:gravity="center"
+                            android:text=""
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:typeface="monospace" />
+
+                        <TextView
+                            android:id="@+id/passcodeSlot4"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_passcode_cell_empty"
+                            android:gravity="center"
+                            android:text=""
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:typeface="monospace" />
+
+                        <TextView
+                            android:id="@+id/passcodeSlot5"
+                            android:layout_width="0dp"
+                            android:layout_height="match_parent"
+                            android:layout_weight="1"
+                            android:background="@drawable/bg_passcode_cell_empty"
+                            android:gravity="center"
+                            android:text=""
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="22sp"
+                            android:textStyle="bold"
+                            android:typeface="monospace" />
+                    </LinearLayout>
+
+                    <!-- Underlying numeric EditText captures keypad & clipboard paste cleanly -->
+                    <EditText
+                        android:id="@+id/inputPasscode"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="@android:color/transparent"
+                        android:contentDescription="@string/step_passcode_title"
+                        android:cursorVisible="false"
+                        android:imeOptions="actionDone"
+                        android:importantForAutofill="no"
+                        android:inputType="number"
+                        android:maxLength="12"
+                        android:textColor="@android:color/transparent"
+                        android:textColorHighlight="@android:color/transparent" />
+                </FrameLayout>
+
+                <TextView
+                    android:id="@+id/txtPasscodeError"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="@color/vajra_crimson"
+                    android:textSize="12sp"
+                    android:visibility="gone" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnSubmitEnroll"
+                    style="@style/Widget.Vajra.Button.Primary"
+                    android:layout_marginTop="18dp"
+                    android:text="@string/btn_verify_connect"
+                    app:icon="@drawable/ic_shield_check" />
+
+                <TextView
+                    android:id="@+id/btnBackToScan"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center"
+                    android:minHeight="40dp"
+                    android:padding="8dp"
+                    android:text="Scan or import a different pairing bundle"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <!-- STEP 3: AWAITING OWNER APPROVAL -->
+            <LinearLayout
+                android:id="@+id/layoutStepAwaitingApproval"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card_surface"
+                android:orientation="vertical"
+                android:padding="18dp"
+                android:visibility="gone">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <FrameLayout
+                        android:id="@+id/iconContainerStep3"
+                        android:layout_width="42dp"
+                        android:layout_height="42dp"
+                        android:background="@drawable/bg_icon_badge_gold">
+
+                        <ProgressBar
+                            android:id="@+id/progressAwaiting"
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:indeterminateTint="@color/vajra_gold" />
+
+                        <ImageView
+                            android:id="@+id/imgStep3StateIcon"
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:src="@drawable/ic_shield_alert"
+                            android:visibility="gone"
+                            app:tint="@color/vajra_crimson" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/badgeStep3State"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/bg_badge_gold"
+                            android:paddingHorizontal="8dp"
+                            android:paddingVertical="3dp"
+                            android:text="PENDING CONSOLE AUTHORIZATION"
+                            android:textColor="@color/vajra_gold"
+                            android:textSize="10sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txtAwaitingTitle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="6dp"
+                            android:text="@string/step_awaiting_title"
+                            android:textColor="@color/vajra_text_primary"
+                            android:textSize="17sp"
+                            android:textStyle="bold" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/txtAwaitingDesc"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/step_awaiting_desc"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="13sp" />
+
+                <!-- Submitted Identity & Keystore Fingerprint Card -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_well_code"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <TextView
+                        style="@style/TextAppearance.Vajra.Overline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="SUBMITTED DEVICE IDENTITY" />
+
+                    <TextView
+                        android:id="@+id/txtStep3DeviceModel"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="Android Companion · ECDSA P-256"
+                        android:textColor="@color/vajra_text_primary"
+                        android:textSize="13sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/txtStep3KeyBacking"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:text="Android Keystore Hardware-Bound Key"
+                        android:textColor="@color/vajra_jade"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/txtStep3ServerUrl"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="@color/vajra_text_secondary"
+                        android:textSize="11sp"
+                        android:typeface="monospace" />
+
+                    <View
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:layout_marginVertical="10dp"
+                        android:background="@color/vajra_border_subtle" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            style="@style/TextAppearance.Vajra.Overline"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="PUBLIC KEY FINGERPRINT" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btnCopyEnrollFingerprint"
+                            style="@style/Widget.Vajra.Button.Compact"
+                            android:layout_width="wrap_content"
+                            android:text="Copy"
+                            app:icon="@drawable/ic_copy" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtFingerprintSummary"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:lineSpacingExtra="2dp"
+                        android:textColor="@color/vajra_gold"
+                        android:textIsSelectable="true"
+                        android:textSize="11sp"
+                        android:typeface="monospace" />
+                </LinearLayout>
+
+                <!-- Polling / Network Diagnostics Box -->
+                <TextView
+                    android:id="@+id/txtStep3DiagnosticBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_card_elevated"
+                    android:lineSpacingExtra="2dp"
+                    android:padding="12dp"
+                    android:text="Polling console authorization status every 2.5 seconds…"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="12sp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnCheckStatusNow"
+                    style="@style/Widget.Vajra.Button.Primary"
+                    android:layout_marginTop="16dp"
+                    android:text="@string/btn_check_status_now"
+                    app:icon="@drawable/ic_pulse_heartbeat" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnRestartPairing"
+                    style="@style/Widget.Vajra.Button.Secondary"
+                    android:layout_marginTop="10dp"
+                    android:text="@string/btn_cancel_restart_pairing"
+                    android:visibility="visible" />
+            </LinearLayout>
+
+            <!-- STEP 4: CONNECTED & PROTECTED -->
+            <LinearLayout
+                android:id="@+id/layoutStepConnected"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card_jade_accent"
+                android:gravity="center_horizontal"
+                android:orientation="vertical"
+                android:padding="22dp"
+                android:visibility="gone">
+
+                <FrameLayout
+                    android:layout_width="56dp"
+                    android:layout_height="56dp"
+                    android:background="@drawable/bg_icon_badge_jade">
+
+                    <ImageView
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:layout_gravity="center"
+                        android:src="@drawable/ic_shield_check"
+                        app:tint="@color/vajra_jade" />
+                </FrameLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:background="@drawable/bg_badge_jade"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"
+                    android:text="ENROLLMENT VERIFIED"
+                    android:textColor="@color/vajra_jade"
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center"
+                    android:text="@string/step_connected_title"
+                    android:textColor="@color/vajra_text_primary"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:gravity="center"
+                    android:lineSpacingExtra="3dp"
+                    android:text="@string/step_connected_desc"
+                    android:textColor="@color/vajra_text_secondary"
+                    android:textSize="13sp" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_well_code"
+                    android:orientation="vertical"
+                    android:padding="12dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="• ECDSA P-256 identity active in Android Keystore\n• Signed telemetry heartbeats &amp; command sync scheduled"
+                        android:textColor="@color/vajra_jade"
+                        android:textSize="12sp"
+                        android:lineSpacingExtra="3dp" />
+                </LinearLayout>
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btnDone"
+                    style="@style/Widget.Vajra.Button.Jade"
+                    android:layout_marginTop="20dp"
+                    android:text="@string/btn_done" />
+            </LinearLayout>
+
+            <!-- Status / Error Feedback Banner -->
+            <LinearLayout
+                android:id="@+id/layoutEnrollErrorBanner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card_error"
+                android:gravity="top"
+                android:orientation="horizontal"
+                android:padding="14dp"
+                android:visibility="gone">
+
+                <ImageView
+                    android:layout_width="18dp"
+                    android:layout_height="18dp"
+                    android:layout_marginTop="2dp"
+                    android:src="@drawable/ic_shield_alert"
+                    app:tint="@color/vajra_crimson" />
+
+                <TextView
+                    android:id="@+id/txtEnrollResult"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:lineSpacingExtra="3dp"
+                    android:textColor="@color/vajra_text_primary"
+                    android:textIsSelectable="true"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

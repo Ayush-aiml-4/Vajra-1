@@ -1,54 +1,88 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">VAJRA Companion</string>
+    <string name="app_tagline">DEFEND · DETECT · RECOVER</string>
     <string name="default_server_url">http://10.0.2.2:3000</string>
-    <string name="status_not_enrolled">Not enrolled</string>
-    <string name="status_pending">Awaiting console confirmation</string>
-    <string name="status_active">Protected · agent active</string>
-    <string name="status_revoked">Enrollment revoked or removed</string>
-    <string name="hint_enroll">Enroll this phone using a one-time token from the VAJRA web console. Private keys stay in Android Keystore.</string>
-    <string name="heartbeat_never">No successful heartbeat yet</string>
-    <string name="heartbeat_ok">Last heartbeat: %1$s (recent)</string>
-    <string name="heartbeat_stale">Last heartbeat: %1$s (stale)</string>
-    <string name="heartbeat_offline">Last heartbeat: %1$s (offline)</string>
-    <string name="enroll_fields_required">Token, device ID, and challenge nonce are required.</string>
-    <string name="enroll_submitting">Submitting proof-of-possession…</string>
-    <string name="paste_pairing_bundle">Paste Pairing Bundle from Clipboard</string>
-    <string name="bundle_applied">Pairing bundle applied. Review details and tap Submit enrollment.</string>
-    <string name="bundle_empty_clipboard">Clipboard is empty. Copy the Pairing Bundle from the VAJRA web console first.</string>
-    <string name="bundle_invalid">Clipboard does not contain a valid VAJRA pairing bundle.</string>
-    <string name="invalid_server_url">Server URL must start with http:// or https://</string>
-    <string name="saved">Saved</string>
-    <string name="disconnect_title">Disconnect this device?</string>
-    <string name="disconnect_message">Removes the local Keystore key and stops heartbeats. Also revoke the device from the web console if it remains listed.</string>
-    <string name="disconnect_confirm">Disconnect</string>
-    <string name="disconnected">Local identity cleared</string>
-    <string name="privacy_body">VAJRA Companion protects devices you own.\n\nData: device id, public key fingerprint, OS/agent version, command receipts, optional event metadata.\n\nNot collected: keystrokes, SMS, contacts, photos, microphone, camera, continuous location (not in this version).\n\nPermissions: INTERNET; POST_NOTIFICATIONS for ring alerts.\n\nDisconnect anytime in Settings. Confirm or revoke devices in the web console.</string>
+
+    <!-- Status Labels -->
+    <string name="status_not_enrolled">Not Enrolled</string>
+    <string name="status_pending">Awaiting Owner Approval</string>
+    <string name="status_active">Protected · Agent Active</string>
+    <string name="status_revoked">Enrollment Revoked</string>
+
+    <!-- Onboarding / Enrollment -->
+    <string name="hint_enroll">Enroll this phone using a one-time pairing QR or bundle from the VAJRA console. Private keys remain inside Android Keystore.</string>
     <string name="onboarding_title">Pair New Device</string>
-    <string name="step_scan_title">Step 1: Scan Pairing QR Code</string>
-    <string name="step_scan_desc">Open the VAJRA web console on your computer, click \'Connect Device\', and scan the QR code displayed on screen.</string>
-    <string name="btn_scan_qr">Scan QR Code</string>
-    <string name="step_passcode_title">Step 2: Enter Verification Code</string>
-    <string name="step_passcode_desc">Enter the 6-digit verification passcode shown below the QR code on your computer screen.</string>
-    <string name="hint_passcode">6-digit passcode (e.g. 842 195)</string>
-    <string name="btn_verify_connect">Verify &amp; Connect Device</string>
-    <string name="step_awaiting_title">Step 3: Awaiting Owner Approval</string>
-    <string name="step_awaiting_desc">Identity verified! Please click \'Approve &amp; Protect Device\' on your web console to grant access.</string>
-    <string name="step_connected_title">Connected &amp; Protected</string>
-    <string name="step_connected_desc">This device is securely enrolled with hardware-backed cryptographic keys in Android Keystore.</string>
-    <string name="btn_done">Go to Dashboard</string>
-    <string name="app_tagline">Defend. Detect. Recover.</string>
-    <string name="onboarding_hero_desc">Cryptographic zero-trust mesh protecting this Android endpoint with hardware-bound keys and tamper-evident telemetry.</string>
-    <string name="btn_connect_device">Connect this device</string>
+    <string name="onboarding_subtitle">Hardware-bound zero-trust device onboarding</string>
+    <string name="onboarding_hero_desc">Cryptographic zero-trust mesh protecting this Android endpoint with hardware-bound keys, signed heartbeats, and verified recovery controls.</string>
+    <string name="btn_connect_device">Connect This Device</string>
+
+    <string name="step_scan_title">Scan or Import Pairing Bundle</string>
+    <string name="step_scan_desc">Open the VAJRA console on your trusted computer, select Connect Device, and scan the pairing QR code shown on screen.</string>
+    <string name="btn_scan_qr">Scan Pairing QR Code</string>
+    <string name="btn_close_scanner">Close Camera Scanner</string>
+    <string name="paste_pairing_bundle">Paste Pairing Bundle</string>
+    <string name="toggle_manual_entry">Enter pairing details manually</string>
+    <string name="toggle_manual_hide">Hide manual pairing details</string>
+    <string name="btn_manual_continue">Continue to Verification</string>
+
     <string name="camera_permission_rationale">VAJRA requires camera access solely to scan pairing QR codes. No photos or video are recorded or transmitted.</string>
-    <string name="camera_denied_desc">Camera permission is required to scan the pairing QR code. You can enable it in device Settings, or paste the pairing code directly from your clipboard.</string>
+    <string name="camera_denied_title">Camera Permission Required</string>
+    <string name="camera_denied_desc">Allow camera access to scan the QR code, or paste the pairing bundle directly from your clipboard.</string>
     <string name="btn_retry_camera">Grant Camera Permission</string>
-    <string name="toggle_manual_entry">Or enter details manually</string>
+
+    <string name="enroll_fields_required">Server URL, enrollment token, device ID, and challenge nonce are required.</string>
+    <string name="enroll_submitting">Generating Keystore key and submitting proof-of-possession…</string>
+    <string name="bundle_applied">Pairing bundle applied. Enter your 6-digit verification passcode.</string>
+    <string name="bundle_empty_clipboard">Clipboard is empty. Copy the pairing bundle from the VAJRA web console first.</string>
+    <string name="bundle_invalid">Clipboard does not contain a valid VAJRA pairing bundle (check format or expiration).</string>
+
+    <!-- Step 2: Verification -->
+    <string name="step_passcode_title">Enter 6-Digit Verification Code</string>
+    <string name="step_passcode_desc">Type the 6-digit verification passcode displayed beneath the QR code on your VAJRA console.</string>
+    <string name="hint_passcode">6-digit passcode (e.g. 842 195)</string>
+    <string name="passcode_incomplete">Enter all 6 digits of the verification code shown on your console.</string>
+    <string name="btn_verify_connect">Verify &amp; Submit Identity</string>
+
+    <!-- Step 3: Owner Approval -->
+    <string name="step_awaiting_title">Awaiting Owner Approval</string>
+    <string name="step_awaiting_desc">Proof-of-possession verified. Confirm this device fingerprint in your VAJRA web console to authorize access.</string>
     <string name="step_rejected_title">Enrollment Declined</string>
-    <string name="step_rejected_desc">The device owner declined this authorization request in the VAJRA console.</string>
+    <string name="step_rejected_desc">The account owner declined this pairing request from the VAJRA console. No device access was granted.</string>
     <string name="step_expired_title">Pairing Challenge Expired</string>
-    <string name="step_expired_desc">The enrollment challenge has expired. Please generate a fresh pairing QR code in the VAJRA console.</string>
+    <string name="step_expired_desc">This pairing session expired before approval completed. Start a fresh pairing request from the console.</string>
     <string name="btn_restart_pairing">Restart Pairing</string>
     <string name="btn_check_status_now">Check Approval Status Now</string>
     <string name="btn_cancel_restart_pairing">Cancel &amp; Restart Pairing</string>
+
+    <!-- Step 4: Connected -->
+    <string name="step_connected_title">Device Protected</string>
+    <string name="step_connected_desc">This device is enrolled with a non-exportable ECDSA P-256 key in Android Keystore. Background telemetry and command checks are active.</string>
+    <string name="btn_done">Open Security Overview</string>
+
+    <!-- Dashboard Telemetry & Commands -->
+    <string name="heartbeat_never">No signed heartbeat sent yet</string>
+    <string name="heartbeat_ok">Last heartbeat: %1$s (recent)</string>
+    <string name="heartbeat_stale">Last heartbeat: %1$s (stale)</string>
+    <string name="heartbeat_offline">Last heartbeat: %1$s (offline)</string>
+
+    <!-- Settings & Privacy -->
+    <string name="invalid_server_url">Server URL must start with https:// (or http:// for local loopback development).</string>
+    <string name="saved">Configuration saved</string>
+    <string name="disconnect_title">Disconnect This Device?</string>
+    <string name="disconnect_message">Removes the local Android Keystore key, cancels background workers, and clears local pairing metadata. Also revoke the device in the VAJRA web console if it remains listed.</string>
+    <string name="disconnect_confirm">Disconnect</string>
+    <string name="disconnected">Local device identity cleared</string>
+    <string name="privacy_body">VAJRA Companion protects endpoints you own using explicit, verifiable cryptographic controls.\n\nCollected Telemetry:\n• Device identifier &amp; ECDSA P-256 public key fingerprint\n• OS release, device model, and agent version\n• Signed heartbeat connectivity &amp; battery state (when available)\n• Explicit command receipts (Device Status &amp; Ring Alarm)\n\nNever Collected:\n• Keystrokes, SMS, contacts, photos, microphone audio, or camera recordings\n• Continuous background GPS location tracking\n\nPermissions Used:\n• INTERNET — Signed communication with your configured VAJRA server\n• CAMERA — Only during active QR pairing scan\n• POST_NOTIFICATIONS — High-priority Find My Device ring alerts\n\nYou can disconnect and delete local Keystore keys anytime in Settings.</string>
+
+    <!-- Dashboard Commands & Telemetry -->
+    <string name="cmd_ring_device">Ring Device</string>
+    <string name="cmd_stop_ring">Stop Ring</string>
+    <string name="cmd_request_status">Request Device Status</string>
+    <string name="btn_send_heartbeat">Send Heartbeat</string>
+    <string name="btn_refresh_telemetry">Refresh Status</string>
+    <string name="settings_title">Settings</string>
+    <string name="settings_subtitle">Notifications, device identity, and server configuration</string>
+    <string name="privacy_title">Privacy &amp; Telemetry</string>
+    <string name="privacy_subtitle">Transparent endpoint data &amp; permission boundaries</string>
 </resources>

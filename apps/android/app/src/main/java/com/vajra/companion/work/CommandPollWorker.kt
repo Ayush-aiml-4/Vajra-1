@@ -1,19 +1,7 @@
 package com.vajra.companion.work
 
-import android.Manifest
-import android.app.NotificationChannel
-import android.app.NotificationManager
-import android.app.PendingIntent
 import android.content.Context
-import android.content.Intent
-import android.content.pm.PackageManager
-import android.media.AudioAttributes
-import android.media.AudioManager
-import android.media.RingtoneManager
 import android.os.Build
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
-import androidx.core.content.ContextCompat
 import androidx.work.Constraints
 import androidx.work.CoroutineWorker
 import androidx.work.ExistingPeriodicWorkPolicy
@@ -24,8 +12,10 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import com.vajra.companion.BuildConfig
 import com.vajra.companion.commands.CommandCapabilityMatrix
 import com.vajra.companion.identity.AndroidKeystoreIdentity
+import com.vajra.companion.identity.DeviceActivityLog
 import com.vajra.companion.network.VajraApiClient
 import org.json.JSONArray
 import org.json.JSONObject
@@ -55,7 +45,18 @@ class CommandPollWorker(
             api.pendingCommands().use { res ->
                 if (res.code == 401 || res.code == 403) {
                     val errBody = res.body?.string().orEmpty()
-                    if (
+                    if (errBody.contains("DEVICE_COMPROMISED")) {
+                        identity.saveMeta(meta.getString("deviceId"), baseUrl, "COMPROMISED")
+                        HeartbeatWorker.cancel(applicationContext)
+                        CommandPollWorker.cancel(applicationContext)
+                        DeviceActivityLog.record(
+                            context = applicationContext,
+                            category = "SECURITY",
+                            status = "FAILED",
+                            title = "Command Poll Rejected (Compromised)",
+                            detail = "Server returned HTTP ${res.code}; device quarantined."
+                        )
+                    } else if (
                         errBody.contains("REVOKED") ||
                         errBody.contains("DECOMMISSIONED") ||
                         errBody.contains("DEVICE_CREDENTIAL_INACTIVE")
@@ -63,6 +64,13 @@ class CommandPollWorker(
                         identity.saveMeta(meta.getString("deviceId"), baseUrl, "REVOKED")
                         HeartbeatWorker.cancel(applicationContext)
                         CommandPollWorker.cancel(applicationContext)
+                        DeviceActivityLog.record(
+                            context = applicationContext,
+                            category = "SECURITY",
+                            status = "FAILED",
+                            title = "Command Poll Rejected (Revoked)",
+                            detail = "Server returned HTTP ${res.code}; local device access revoked."
+                        )
                     }
                     return Result.success()
                 }
@@ -75,6 +83,11 @@ class CommandPollWorker(
                     root.has("pendingCommands") -> root.getJSONArray("pendingCommands")
                     else -> JSONArray()
                 }
+
+                cmdStatePrefs.edit()
+                    .putLong("last_poll_at", System.currentTimeMillis())
+                    .putInt("last_poll_count", commands.length())
+                    .apply()
 
                 var shouldRetryResultSubmit = false
 
@@ -98,10 +111,13 @@ class CommandPollWorker(
                         if (savedResult != null) {
                             val submitted = submitResultIdempotently(api, id, savedResult)
                             if (submitted) {
-                                cmdStatePrefs.edit().putString(
-                                    id,
-                                    JSONObject().put("state", "SUBMITTED").put("result", savedResult).toString()
-                                ).apply()
+                                persistCommandSummary(
+                                    cmdStatePrefs = cmdStatePrefs,
+                                    commandId = id,
+                                    actionType = action,
+                                    syncState = "SUBMITTED",
+                                    result = savedResult
+                                )
                             } else {
                                 shouldRetryResultSubmit = true
                             }
@@ -154,26 +170,38 @@ class CommandPollWorker(
                     if (metadata != null) result.put("resultMetadata", metadata)
 
                     // Persist PENDING_RESULT_SUBMIT BEFORE calling /result so retries never double-execute RING_DEVICE
-                    cmdStatePrefs.edit().putString(
-                        id,
-                        JSONObject()
-                            .put("state", "PENDING_RESULT_SUBMIT")
-                            .put("result", result)
-                            .toString()
-                    ).apply()
+                    persistCommandSummary(
+                        cmdStatePrefs = cmdStatePrefs,
+                        commandId = id,
+                        actionType = action,
+                        syncState = "PENDING_RESULT_SUBMIT",
+                        result = result
+                    )
 
                     val submitted = submitResultIdempotently(api, id, result)
                     if (submitted) {
-                        cmdStatePrefs.edit().putString(
-                            id,
-                            JSONObject()
-                                .put("state", "SUBMITTED")
-                                .put("result", result)
-                                .toString()
-                        ).apply()
+                        persistCommandSummary(
+                            cmdStatePrefs = cmdStatePrefs,
+                            commandId = id,
+                            actionType = action,
+                            syncState = "SUBMITTED",
+                            result = result
+                        )
                     } else {
                         shouldRetryResultSubmit = true
                     }
+
+                    DeviceActivityLog.record(
+                        context = applicationContext,
+                        category = "COMMAND",
+                        status = if (status == "COMPLETED") "SUCCESS" else "FAILED",
+                        title = "Console Command: $action",
+                        detail = if (submitted) {
+                            "$status — $message"
+                        } else {
+                            "$status locally (pending result upload) — $message"
+                        }
+                    )
                 }
 
                 if (shouldRetryResultSubmit) Result.retry() else Result.success()
@@ -181,6 +209,26 @@ class CommandPollWorker(
         } catch (_: Exception) {
             Result.retry()
         }
+    }
+
+    private fun persistCommandSummary(
+        cmdStatePrefs: android.content.SharedPreferences,
+        commandId: String,
+        actionType: String,
+        syncState: String,
+        result: JSONObject
+    ) {
+        val entry = JSONObject()
+            .put("commandId", commandId)
+            .put("actionType", actionType)
+            .put("state", syncState)
+            .put("updatedAt", System.currentTimeMillis())
+            .put("result", result)
+            .toString()
+        cmdStatePrefs.edit()
+            .putString(commandId, entry)
+            .putString("last_command_summary", entry)
+            .apply()
     }
 
     private fun submitResultIdempotently(api: VajraApiClient, id: String, result: JSONObject): Boolean {
@@ -203,7 +251,7 @@ class CommandPollWorker(
         return when (action) {
             CommandCapabilityMatrix.REQUEST_DEVICE_STATUS -> {
                 val meta = JSONObject()
-                    .put("agentVersion", "0.1.0-android")
+                    .put("agentVersion", "${BuildConfig.VERSION_NAME}-android")
                     .put("osVersion", "Android ${Build.VERSION.RELEASE}")
                     .put("sdkInt", Build.VERSION.SDK_INT)
                     .put("model", Build.MODEL)
@@ -216,123 +264,8 @@ class CommandPollWorker(
     }
 
     private fun ringDevice(): Triple<String, String, JSONObject> {
-        val channelId = "vajra_ring"
-        val nm = applicationContext.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-        val audioManager = applicationContext.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val existingChannel = nm.getNotificationChannel(channelId)
-            if (existingChannel == null) {
-                val channel = NotificationChannel(
-                    channelId,
-                    "VAJRA Ring",
-                    NotificationManager.IMPORTANCE_HIGH
-                ).apply {
-                    description = "Owner-requested device ring from VAJRA console"
-                    setSound(
-                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM),
-                        AudioAttributes.Builder()
-                            .setUsage(AudioAttributes.USAGE_ALARM)
-                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                            .build()
-                    )
-                }
-                nm.createNotificationChannel(channel)
-            }
-        }
-
-        val hasPostPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) ==
-                PackageManager.PERMISSION_GRANTED
-        } else {
-            true
-        }
-        val appNotificationsEnabled = NotificationManagerCompat.from(applicationContext).areNotificationsEnabled()
-        val channelBlocked = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val ch = nm.getNotificationChannel(channelId)
-            ch != null && ch.importance == NotificationManager.IMPORTANCE_NONE
-        } else {
-            false
-        }
-        val dndActive = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            nm.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_ALL &&
-                nm.currentInterruptionFilter != NotificationManager.INTERRUPTION_FILTER_UNKNOWN
-        } else {
-            false
-        }
-        val alarmVolume = audioManager?.getStreamVolume(AudioManager.STREAM_ALARM) ?: -1
-
-        val notificationsEffective = hasPostPermission && appNotificationsEnabled && !channelBlocked
-
-        if (notificationsEffective) {
-            val stopIntent = Intent(applicationContext, StopRingReceiver::class.java).apply {
-                action = RingAlarmController.ACTION_STOP_RING
-            }
-            val stopPendingIntent = PendingIntent.getBroadcast(
-                applicationContext,
-                RingAlarmController.NOTIFICATION_ID,
-                stopIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-
-            val notification = NotificationCompat.Builder(applicationContext, channelId)
-                .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-                .setContentTitle("VAJRA — Find my device")
-                .setContentText("Your VAJRA account requested this device to ring.")
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setCategory(NotificationCompat.CATEGORY_ALARM)
-                .addAction(
-                    android.R.drawable.ic_media_pause,
-                    "Stop Alarm",
-                    stopPendingIntent
-                )
-                .setDeleteIntent(stopPendingIntent)
-                .setAutoCancel(true)
-                .build()
-            nm.notify(RingAlarmController.NOTIFICATION_ID, notification)
-        }
-
-        val audiblePlaybackStarted = try {
-            val alarmUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-            val ringtone = alarmUri?.let { RingtoneManager.getRingtone(applicationContext, it) }
-            RingAlarmController.start(ringtone)
-        } catch (_: Exception) {
-            false
-        }
-
-        val outcome = when {
-            !notificationsEffective && !audiblePlaybackStarted -> "BLOCKED"
-            audiblePlaybackStarted && !dndActive && alarmVolume != 0 && notificationsEffective -> "FULL_AUDIBLE"
-            else -> "DEGRADED_SILENT"
-        }
-
-        val telemetry = JSONObject()
-            .put("deliveryOutcome", outcome)
-            .put("notificationsEnabled", notificationsEffective)
-            .put("postNotificationsGranted", hasPostPermission)
-            .put("channelBlocked", channelBlocked)
-            .put("dndActive", dndActive)
-            .put("alarmVolume", alarmVolume)
-            .put("audiblePlaybackStarted", audiblePlaybackStarted)
-
-        return when (outcome) {
-            "BLOCKED" -> Triple(
-                "FAILED",
-                "Ring blocked: device notifications are disabled and alarm playback could not start.",
-                telemetry
-            )
-            "FULL_AUDIBLE" -> Triple(
-                "COMPLETED",
-                "Ring notification posted and alarm playback started on device.",
-                telemetry
-            )
-            else -> Triple(
-                "COMPLETED",
-                "Ring triggered with degraded audio visibility (check DND, alarm volume, or notification settings).",
-                telemetry
-            )
-        }
+        val outcome = RingExecutionHelper.executeRing(applicationContext, "Your VAJRA account")
+        return Triple(outcome.status, outcome.message, outcome.telemetry)
     }
 
     companion object {
